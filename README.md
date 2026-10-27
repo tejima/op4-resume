@@ -163,8 +163,9 @@ Handbook作者：<作者>
 index.html          アプリ本体（HTML / CSS / JavaScript）
 samples.js          サンプルデータ（翻訳係・Tips係）
 sample-icons.js     サンプルのアイコン（tools/make-sample-icons.js で生成）
-tools/              サンプルのアイコンを作るスクリプト
+tools/              サンプルのアイコン・認定イメージ画像を作るスクリプト
 samples/            サンプルの書き出し PNG
+samples/stamped/    「OpenPNE認定」のはんこを押したイメージ画像（機能ではなく見た目の例）
 tests/roundtrip.js  往復テスト（ヘッドレス Chromium）
 ```
 
