@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>係の履歴書メーカー</title>
-<meta name="description" content="AI Handbook を A4・1枚の「係の履歴書」PNGにまとめる、作る・読むためのツール">
+<title>係のスキルシートメーカー</title>
+<meta name="description" content="AI Handbook を A4・1枚の「係のスキルシート」PNGにまとめる、作る・読むためのツール">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
@@ -208,8 +208,8 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
 <body>
 <header class="app">
   <div class="inner">
-    <h1>係の履歴書メーカー</h1>
-    <p>AI Handbook を A4・1枚の「係の履歴書」PNGにまとめます。入力内容はこのブラウザの中だけで処理され、外部には送信されません。</p>
+    <h1>係のスキルシートメーカー</h1>
+    <p>AI Handbook を A4・1枚の「係のスキルシート」PNGにまとめます。入力内容はこのブラウザの中だけで処理され、外部には送信されません。</p>
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" id="tab-make" aria-selected="true" aria-controls="mode-make">作る</button>
       <button type="button" role="tab" id="tab-read" aria-selected="false" aria-controls="mode-read">読む</button>
@@ -241,23 +241,23 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
           <button type="button" class="btn primary" id="btn-export">PNGで保存</button>
           <button type="button" class="btn" id="btn-copy-text">Handbookテキストをコピー</button>
         </div>
-        <div class="preview-wrap"><canvas id="preview" width="1240" height="1754" aria-label="係の履歴書のプレビュー"></canvas></div>
+        <div class="preview-wrap"><canvas id="preview" width="1240" height="1754" aria-label="係のスキルシートのプレビュー"></canvas></div>
       </div>
     </div>
   </section>
 
   <!-- ===== 読むモード ===== -->
   <section id="mode-read" role="tabpanel" aria-labelledby="tab-read" hidden>
-    <div class="caution" role="note">係の履歴書の中身は、AIへの指示書です。採用する前に、必ず運営者が全文を読んで確認してください。</div>
+    <div class="caution" role="note">係のスキルシートの中身は、AIへの指示書です。採用する前に、必ず運営者が全文を読んで確認してください。</div>
     <div class="dropzone" id="dropzone">
-      <p>係の履歴書PNGをここにドラッグ＆ドロップ</p>
+      <p>係のスキルシートPNGをここにドラッグ＆ドロップ</p>
       <label class="btn">ファイルを選ぶ<input type="file" id="input-png" accept="image/png" hidden></label>
     </div>
     <div id="read-result" hidden>
       <div class="read-layout">
         <div class="panel">
           <h2>読み込んだ画像</h2>
-          <img id="read-img" class="read-img" alt="読み込んだ係の履歴書">
+          <img id="read-img" class="read-img" alt="読み込んだ係のスキルシート">
         </div>
         <div class="panel">
           <div id="read-missing" class="status warn" hidden></div>
@@ -283,7 +283,7 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
   </section>
 </main>
 
-<footer class="app">OpenPNE AI Handbook ／ 係の履歴書メーカー</footer>
+<footer class="app">OpenPNE AI Handbook ／ 係のスキルシートメーカー</footer>
 
 <dialog id="dlg-text">
   <h2 style="margin-top:0;font-size:16px">Handbookテキストから読み込む</h2>
@@ -297,6 +297,7 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="sample-icons.js"></script>
 <script src="samples.js"></script>
 <script>
 'use strict';
@@ -314,16 +315,16 @@ const Handbook = (() => {
   const FIELDS = [
     { key: 'name',       label: '係名',           resume: '氏名',         kind: 'line', max: 20, required: true },
     { key: 'version',    label: '版',             resume: '氏名の横',     kind: 'line', max: 10, placeholder: 'v1.0' },
-    { key: 'purpose',    label: '目的',           resume: '志望動機',     kind: 'text', max: 120 },
-    { key: 'abilities',  label: 'できること',     resume: '得意なこと',   kind: 'list', maxItems: 5, max: 40 },
-    { key: 'triggers',   label: 'きっかけ',       resume: '勤務時間',     kind: 'list', maxItems: 3, max: 40 },
-    { key: 'scope',      label: '担当範囲・設定', resume: '勤務地',       kind: 'text', max: 150, hint: '担当ルーム、対応言語など（任意）' },
-    { key: 'tools',      label: '使う手足',       resume: '使う道具',     kind: 'list', maxItems: 6, max: 30 },
-    { key: 'steps',      label: '手順',           resume: '仕事の進め方', kind: 'ordered', maxItems: 8, max: 80 },
-    { key: 'donts',      label: 'やらないこと',   resume: '誓約事項',     kind: 'list', maxItems: 8, max: 60 },
-    { key: 'troubles',   label: '困ったとき',     resume: '困ったときは', kind: 'list', maxItems: 4, max: 80 },
-    { key: 'example',    label: '出力の例',       resume: '仕事の見本',   kind: 'text', max: 250 },
-    { key: 'evaluation', label: 'うまくいったかの見方', resume: '評価のしかた', kind: 'list', maxItems: 3, max: 50 },
+    { key: 'purpose',    label: '目的',           resume: '業務概要',     kind: 'text', max: 120 },
+    { key: 'abilities',  label: 'できること',     resume: 'スキル',   kind: 'list', maxItems: 5, max: 40 },
+    { key: 'triggers',   label: 'きっかけ',       resume: '稼働タイミング',     kind: 'list', maxItems: 3, max: 40 },
+    { key: 'scope',      label: '担当範囲・設定', resume: '担当範囲',       kind: 'text', max: 150, hint: '担当ルーム、対応言語など（任意）' },
+    { key: 'tools',      label: '使う手足',       resume: '使用ツール',     kind: 'list', maxItems: 6, max: 30 },
+    { key: 'steps',      label: '手順',           resume: '業務フロー', kind: 'ordered', maxItems: 8, max: 80 },
+    { key: 'donts',      label: 'やらないこと',   resume: '遵守事項',     kind: 'list', maxItems: 8, max: 60 },
+    { key: 'troubles',   label: '困ったとき',     resume: '例外時の対応', kind: 'list', maxItems: 4, max: 80 },
+    { key: 'example',    label: '出力の例',       resume: '成果物サンプル',   kind: 'text', max: 250 },
+    { key: 'evaluation', label: 'うまくいったかの見方', resume: '評価指標', kind: 'list', maxItems: 3, max: 50 },
   ];
   const CREDIT_FIELDS = [
     { key: 'author',       label: 'Handbook作者',       max: 30 },
@@ -660,7 +661,7 @@ const PngChunks = (() => {
 })();
 
 /* =====================================================================
- * 係の履歴書データ（PNG の裏データ）
+ * 係のスキルシートデータ（PNG の裏データ）
  *   hash は kakari・credits・handbookText・icon の正規化JSONの SHA-256。
  *   signature は将来の「OpenPNE認定」用の予約欄（今回は常に null）。
  * ===================================================================== */
@@ -844,7 +845,73 @@ const Icon = (() => {
 })();
 
 /* =====================================================================
- * 履歴書の表面（Canvas 描画）
+ * ロボットのアバター（512×512 の座標で描く）
+ *   アイコン未設定時の写真欄と、サンプルのアイコン作り（tools/）で使う。
+ * ===================================================================== */
+const Avatar = (() => {
+  const SIZE = 512;
+  const THEMES = {
+    placeholder: { bg: '#eceae5', face: '#f8f7f4', body: '#dcd9d2', ink: '#9a968e', accent: '#c4c0b7', cheek: null },
+    translation: { bg: '#d9e8f6', face: '#ffffff', body: '#a9c7e6', ink: '#24476b', accent: '#2f6fb0', cheek: '#f6b9c4' },
+    tips:        { bg: '#fbefc8', face: '#ffffff', body: '#f2cf6b', ink: '#5a4210', accent: '#e39b18', cheek: '#f6b9c4' },
+  };
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function draw(ctx, t) {
+    ctx.save();
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    // 胴体
+    ctx.fillStyle = t.body;
+    roundRect(ctx, 150, 372, 212, 180, 56); ctx.fill();
+    ctx.fillStyle = t.face;
+    roundRect(ctx, 222, 412, 68, 44, 14); ctx.fill();
+    // アンテナ
+    ctx.strokeStyle = t.ink; ctx.lineWidth = 10; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(256, 150); ctx.lineTo(256, 104); ctx.stroke();
+    ctx.fillStyle = t.accent;
+    ctx.beginPath(); ctx.arc(256, 92, 20, 0, Math.PI * 2); ctx.fill();
+    // 耳
+    ctx.fillStyle = t.body;
+    roundRect(ctx, 104, 222, 40, 84, 16); ctx.fill();
+    roundRect(ctx, 368, 222, 40, 84, 16); ctx.fill();
+    // 頭
+    ctx.fillStyle = t.face;
+    ctx.strokeStyle = t.ink; ctx.lineWidth = 8;
+    roundRect(ctx, 132, 150, 248, 214, 58); ctx.fill(); ctx.stroke();
+    // 目
+    ctx.fillStyle = t.ink;
+    ctx.beginPath(); ctx.arc(206, 248, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(306, 248, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = t.face;
+    ctx.beginPath(); ctx.arc(213, 240, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(313, 240, 7, 0, Math.PI * 2); ctx.fill();
+    // ほお
+    if (t.cheek) {
+      ctx.fillStyle = t.cheek;
+      ctx.beginPath(); ctx.ellipse(176, 298, 20, 12, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(336, 298, 20, 12, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // 口
+    ctx.strokeStyle = t.ink; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.arc(256, 282, 36, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+
+  return { SIZE, THEMES, draw, roundRect };
+})();
+
+/* =====================================================================
+ * スキルシートの表面（Canvas 描画）
  *   プレビューと書き出しは同じ render() を通る。
  * ===================================================================== */
 const Resume = (() => {
@@ -962,7 +1029,7 @@ const Resume = (() => {
   // 表面に載る文字（フォントの読み込み対象を絞るために使う）
   function allText(rec) {
     const k = rec.kakari, c = rec.credits;
-    return ['係の履歴書 現在 年月日 氏名 写真 アイコン 版 推薦者 作成日 作者 絵師 ライセンス テキスト 画像 OpenPNE AI Handbook ―・。0123456789.／：',
+    return ['係のスキルシート 現在 年月日 氏名 写真 アイコン 版 クレジット 作成日 作者 絵師 ライセンス テキスト 画像 OpenPNE AI Handbook ―・。0123456789.／：',
       ...Handbook.FIELDS.map((f) => f.resume + f.label),
       ...Object.values(k).flat(), ...Object.values(c)].join('');
   }
@@ -985,7 +1052,7 @@ const Resume = (() => {
     let y = M.top;
     ctx.fillStyle = C.ink;
     ctx.font = font(40, 700);
-    ctx.fillText('係 の 履 歴 書', L, y + 40);
+    ctx.fillText('係のスキルシート', L, y + 40);
     ctx.font = font(17);
     ctx.fillStyle = C.sub;
     const dateText = `${formatDate(rec.createdAt)} 現在`;
@@ -1048,14 +1115,16 @@ const Resume = (() => {
       ctx.strokeStyle = C.frame; ctx.lineWidth = 1.5;
       ctx.strokeRect(px, py, PHOTO, PHOTO);
     } else {
+      // アイコンがないときは、仮のロボットを描く（裏データの icon は null のまま）
       ctx.save();
-      ctx.setLineDash([8, 6]); ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
-      ctx.strokeRect(px + 0.75, py + 0.75, PHOTO - 1.5, PHOTO - 1.5);
+      ctx.translate(px, py);
+      ctx.scale(PHOTO / Avatar.SIZE, PHOTO / Avatar.SIZE);
+      Avatar.draw(ctx, Avatar.THEMES.placeholder);
       ctx.restore();
-      ctx.fillStyle = C.faint; ctx.font = font(26);
-      center(ctx, '写真', px + PHOTO / 2, py + PHOTO / 2 + 2);
-      ctx.font = font(15);
-      center(ctx, '（アイコン）', px + PHOTO / 2, py + PHOTO / 2 + 32);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
+      ctx.strokeRect(px, py, PHOTO, PHOTO);
+      ctx.fillStyle = C.sub; ctx.font = font(14);
+      center(ctx, 'アイコン未設定', px + PHOTO / 2, py + PHOTO - 12);
     }
 
     y = headTop + headH + 20;
@@ -1064,7 +1133,7 @@ const Resume = (() => {
     const tableTop = y;
     const rows = [];
     for (const f of Handbook.FIELDS.slice(3)) rows.push({ field: f, lines: blockLines(ctx, f, k[f.key], contentW(CW)) });
-    rows.push({ field: { resume: '推薦者', label: 'クレジット' }, lines: creditLines(ctx, c, contentW(CW)) });
+    rows.push({ field: { resume: 'クレジット', label: '作者・ライセンス' }, lines: creditLines(ctx, c, contentW(CW)) });
     for (const row of rows) {
       const n = Math.max(1, row.lines.length);
       row.h = Math.max(ROW_MIN_H, n * BODY_LH + PAD_Y * 2);
@@ -1193,7 +1262,7 @@ const Exporter = (() => {
     const iconImg = rec.icon ? await Icon.loadImage(rec.icon) : null;
     const canvas = document.createElement('canvas');
     const res = Resume.render(canvas, rec, iconImg, { showOverflow: false });
-    if (res.overflow > 0) throw new Error(`履歴書の1枚に収まりません（約${res.overflowLines}行ぶん）`);
+    if (res.overflow > 0) throw new Error(`スキルシート1枚に収まりません（約${res.overflowLines}行ぶん）`);
     const png = await canvasToBytes(canvas);
     return { bytes: Record.embed(png, rec), record: rec };
   }
@@ -1280,7 +1349,7 @@ const App = (() => {
     const fieldBox = (key, label, resume, input, hint) => {
       const box = el('div', { class: 'field', 'data-key': key });
       const lab = el('label', { class: 'title', for: `f-${key}` }, el('span', { text: label }));
-      if (resume) lab.append(el('span', { class: 'resume-name', text: `履歴書の「${resume}」` }));
+      if (resume) lab.append(el('span', { class: 'resume-name', text: `スキルシートの「${resume}」` }));
       box.append(lab);
       if (hint) box.append(el('div', { class: 'hint', text: hint }));
       box.append(input, el('div', { class: 'msg' }));
@@ -1310,7 +1379,7 @@ const App = (() => {
     pick.append(fileInput);
     const remove = el('button', { type: 'button', class: 'btn', id: 'btn-icon-remove', text: '画像を外す' });
     iconBox.append(
-      el('label', { class: 'title' }, el('span', { text: 'アイコン画像' }), el('span', { class: 'resume-name', text: '履歴書の「写真」' })),
+      el('label', { class: 'title' }, el('span', { text: 'アイコン画像' }), el('span', { class: 'resume-name', text: 'スキルシートの「写真」' })),
       el('div', { class: 'hint', text: 'PNG / JPEG / WebP（SVGは不可）。正方形に切り抜いて512×512にします。' }),
       el('div', { class: 'icon-field' }, thumb, pick, remove),
       el('div', { class: 'msg' }),
@@ -1331,8 +1400,8 @@ const App = (() => {
     });
     remove.addEventListener('click', async () => { state.icon = null; await refreshIcon(); changed(); });
 
-    // クレジット（推薦者）
-    form.append(el('div', { class: 'group-title', text: '推薦者（クレジット）' }));
+    // クレジット
+    form.append(el('div', { class: 'group-title', text: 'クレジット' }));
     const credits = el('div', { class: 'row2' });
     for (const key of ['author', 'illustrator']) {
       const f = Handbook.CREDIT_FIELDS.find((x) => x.key === key);
@@ -1430,7 +1499,7 @@ const App = (() => {
     const problems = [];
     const nErr = Object.keys(errors).length;
     if (nErr) problems.push(`入力欄に${nErr}か所の注意があります（赤い欄を見てください）。`);
-    if (lastRender.overflow > 0) problems.push(`履歴書の1枚に収まりません。あと約${lastRender.overflowLines}行ぶん減らしてください。`);
+    if (lastRender.overflow > 0) problems.push(`スキルシート1枚に収まりません。あと約${lastRender.overflowLines}行ぶん減らしてください。`);
     if (!fontsReady && !fontsLoading) problems.push('フォント（Noto Sans JP）を読み込めていません。ネット接続を確認してください。');
     if (problems.length) status.append(el('div', { class: 'status warn', text: problems.join('\n') }));
     else if (data.kakari.name) status.append(el('div', { class: 'status ok', text: '全文が1枚に収まっています。' }));
@@ -1497,7 +1566,7 @@ const App = (() => {
         setData(obj);
         toast('JSONを読み込みました');
       } catch (e) {
-        alert('JSONを読み込めませんでした。係の履歴書メーカーで保存したJSONか確認してください。');
+        alert('JSONを読み込めませんでした。係のスキルシートメーカーで保存したJSONか確認してください。');
       }
     });
 
@@ -1520,7 +1589,7 @@ const App = (() => {
   }
 
   // ---------- 読むモード ----------
-  const MISSING_MSG = 'この画像には裏データがありません。SNSへのアップロード時に消えた可能性があります。履歴書の表面をClaudeに読ませて取り込んでください。';
+  const MISSING_MSG = 'この画像には裏データがありません。SNSへのアップロード時に消えた可能性があります。スキルシートの表面をClaudeに読ませて取り込んでください。';
 
   async function analyzePng(bytes) {
     const r = Record.readFromPng(bytes);
@@ -1550,7 +1619,7 @@ const App = (() => {
     if (result.status !== 'ok') {
       $('read-data').hidden = true;
       missing.hidden = false;
-      missing.textContent = result.status === 'notpng' ? 'PNG画像ではありません。係の履歴書のPNGファイルを選んでください。' : MISSING_MSG;
+      missing.textContent = result.status === 'notpng' ? 'PNG画像ではありません。係のスキルシートのPNGファイルを選んでください。' : MISSING_MSG;
       if (result.status === 'broken') missing.append(el('div', { style: 'font-weight:400;font-size:13px;margin-top:4px', text: `（詳細：${result.reason}）` }));
       return;
     }
@@ -1650,7 +1719,7 @@ const App = (() => {
 })();
 
 // テストや将来の拡張（係図鑑・認定など）から使えるように公開しておく
-window.KakariResume = { Handbook, HandbookText, PngChunks, Record, Icon, Resume, Exporter, App };
+window.KakariResume = { Handbook, HandbookText, PngChunks, Record, Icon, Avatar, Resume, Exporter, App };
 App.init();
 </script>
 </body>

@@ -1,4 +1,4 @@
-// 係の履歴書メーカーの往復テスト（ヘッドレス Chromium で index.html を開いて検査する）
+// 係のスキルシートメーカーの往復テスト（ヘッドレス Chromium で index.html を開いて検査する）
 //   node tests/roundtrip.js
 // サンプル2件の書き出しPNGを samples/ に保存し、完了条件の各項目を確認する。
 const { chromium } = require('playwright');

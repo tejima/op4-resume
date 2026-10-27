@@ -1,5 +1,6 @@
-// 係の履歴書メーカー：サンプルデータ（指示書 付録A・B）
-// index.html から <script src="samples.js"> で読み込む。
+// 係のスキルシートメーカー：サンプルデータ（指示書 付録A・B）
+// index.html から <script src="samples.js"> で読み込む（アイコンは sample-icons.js）。
+const ICONS = window.KAKARI_SAMPLE_ICONS || {};
 window.KAKARI_SAMPLES = [
   {
     id: 'translation',
@@ -49,7 +50,7 @@ window.KAKARI_SAMPLES = [
         ],
       },
       credits: { author: '', illustrator: '', textLicense: 'CC BY 4.0', imageLicense: '' },
-      icon: null,
+      icon: ICONS.translation || null,
     },
   },
   {
@@ -97,7 +98,7 @@ window.KAKARI_SAMPLES = [
         ],
       },
       credits: { author: '', illustrator: '', textLicense: 'CC BY 4.0', imageLicense: '' },
-      icon: null,
+      icon: ICONS.tips || null,
     },
   },
 ];
