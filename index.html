@@ -1,0 +1,1657 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>係の履歴書メーカー</title>
+<meta name="description" content="AI Handbook を A4・1枚の「係の履歴書」PNGにまとめる、作る・読むためのツール">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
+<style>
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #faf8f3;
+  --text: #2a2a2a;
+  --muted: #6b675f;
+  --border: #ddd8cc;
+  --accent: #2f5d8a;
+  --accent-text: #ffffff;
+  --accent-soft: #e6eef6;
+  --warn: #b23b2e;
+  --warn-soft: #fbeceA;
+  --ok: #2e7d4f;
+  --ok-soft: #e7f4ec;
+  --caution-bg: #fff6dc;
+  --caution-border: #e8c766;
+  --caution-text: #5a4500;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.05);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1d20;
+    --surface: #26282c;
+    --surface-2: #2d3035;
+    --text: #e9e7e2;
+    --muted: #a6a29a;
+    --border: #3d4046;
+    --accent: #7fb0e0;
+    --accent-text: #10202f;
+    --accent-soft: #24384b;
+    --warn: #f08c7f;
+    --warn-soft: #3d2622;
+    --ok: #7fd3a1;
+    --ok-soft: #1f3a2a;
+    --caution-bg: #3a321a;
+    --caution-border: #8a7330;
+    --caution-text: #f3e2a8;
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1d20;
+  --surface: #26282c;
+  --surface-2: #2d3035;
+  --text: #e9e7e2;
+  --muted: #a6a29a;
+  --border: #3d4046;
+  --accent: #7fb0e0;
+  --accent-text: #10202f;
+  --accent-soft: #24384b;
+  --warn: #f08c7f;
+  --warn-soft: #3d2622;
+  --ok: #7fd3a1;
+  --ok-soft: #1f3a2a;
+  --caution-bg: #3a321a;
+  --caution-border: #8a7330;
+  --caution-text: #f3e2a8;
+  --shadow: 0 1px 3px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans JP", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+header.app {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px 0;
+}
+header.app .inner { max-width: 1280px; margin: 0 auto; }
+header.app h1 { font-size: 20px; margin: 0; }
+header.app p { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+nav.tabs { display: flex; gap: 4px; }
+nav.tabs button {
+  appearance: none; border: 1px solid transparent; border-bottom: none;
+  background: transparent; color: var(--muted);
+  padding: 8px 18px; font: inherit; font-weight: 700; cursor: pointer;
+  border-radius: 8px 8px 0 0;
+}
+nav.tabs button[aria-selected="true"] {
+  background: var(--bg); color: var(--text); border-color: var(--border);
+  margin-bottom: -1px;
+}
+main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+[hidden] { display: none !important; }
+
+.make-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 960px) {
+  .make-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .preview-pane { position: sticky; top: 12px; }
+}
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; box-shadow: var(--shadow);
+}
+.panel h2 { font-size: 16px; margin: 0 0 12px; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+button.btn, label.btn, select.btn {
+  appearance: none; font: inherit; font-size: 14px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  padding: 7px 12px; border-radius: 7px; cursor: pointer; line-height: 1.4;
+}
+button.btn:hover, label.btn:hover { border-color: var(--accent); }
+button.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+button.btn:disabled { opacity: .45; cursor: not-allowed; }
+button.btn.danger { color: var(--warn); }
+select.btn { appearance: auto; }
+
+fieldset { border: none; padding: 0; margin: 0; }
+.field { margin-bottom: 14px; }
+.field label.title { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 14px; }
+.field label.title .resume-name { font-weight: 400; color: var(--muted); font-size: 12px; }
+.field .hint { color: var(--muted); font-size: 12px; margin: 2px 0 4px; }
+.field input[type="text"], .field textarea, .field select {
+  width: 100%; font: inherit; font-size: 15px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 9px;
+}
+.field textarea { resize: vertical; min-height: 64px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.field .count { font-size: 12px; color: var(--muted); text-align: right; margin-top: 2px; }
+.field.invalid input, .field.invalid textarea { border-color: var(--warn); }
+.field .msg { font-size: 12px; color: var(--warn); margin-top: 2px; white-space: pre-line; }
+.row2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+@media (min-width: 520px) { .row2 { grid-template-columns: 1fr 1fr; } }
+.group-title { font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); margin: 18px 0 10px; padding-bottom: 4px; }
+
+.icon-field { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.icon-thumb {
+  width: 88px; height: 88px; border: 1px dashed var(--border); border-radius: 6px;
+  display: grid; place-items: center; color: var(--muted); font-size: 12px; overflow: hidden; background: var(--surface-2);
+}
+.icon-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.status {
+  white-space: pre-line;
+  border-radius: 8px; padding: 8px 12px; font-size: 14px; margin-bottom: 10px;
+}
+.status.warn { background: var(--warn-soft); color: var(--warn); }
+.status.ok { background: var(--ok-soft); color: var(--ok); }
+.status.info { background: var(--accent-soft); color: var(--text); }
+.preview-wrap { background: var(--surface-2); border-radius: 8px; padding: 8px; }
+.preview-wrap canvas { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.15); }
+.export-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.caution {
+  background: var(--caution-bg); border: 1px solid var(--caution-border); color: var(--caution-text);
+  border-radius: 8px; padding: 10px 14px; font-weight: 700; margin-bottom: 14px;
+}
+.dropzone {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 28px 16px; text-align: center;
+  color: var(--muted); background: var(--surface);
+}
+.dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
+.read-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+@media (min-width: 960px) { .read-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: start; } }
+.read-img { width: 100%; height: auto; display: block; border: 1px solid var(--border); background: #fff; }
+dl.meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0 0 12px; }
+dl.meta dt { color: var(--muted); font-size: 13px; }
+dl.meta dd { margin: 0; overflow-wrap: anywhere; }
+pre.handbook {
+  white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  max-height: 520px; overflow: auto; margin: 8px 0;
+}
+.checks { list-style: none; padding: 0; margin: 0 0 12px; }
+.checks li { padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
+.checks li.ok { background: var(--ok-soft); color: var(--ok); }
+.checks li.ng { background: var(--warn-soft); color: var(--warn); }
+.checks li.na { background: var(--surface-2); color: var(--muted); }
+.read-icon { width: 128px; height: 128px; border: 1px solid var(--border); border-radius: 8px; object-fit: cover; background: var(--surface-2); }
+
+dialog {
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text);
+  width: min(720px, calc(100vw - 32px)); padding: 16px;
+}
+dialog::backdrop { background: rgba(0,0,0,.4); }
+dialog textarea { width: 100%; min-height: 320px; font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 20px 16px 32px; }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="inner">
+    <h1>係の履歴書メーカー</h1>
+    <p>AI Handbook を A4・1枚の「係の履歴書」PNGにまとめます。入力内容はこのブラウザの中だけで処理され、外部には送信されません。</p>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-make" aria-selected="true" aria-controls="mode-make">作る</button>
+      <button type="button" role="tab" id="tab-read" aria-selected="false" aria-controls="mode-read">読む</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ===== 作るモード ===== -->
+  <section id="mode-make" role="tabpanel" aria-labelledby="tab-make">
+    <div class="make-layout">
+      <div class="panel form-pane">
+        <div class="toolbar">
+          <select class="btn" id="sample-select" aria-label="サンプルを読み込む">
+            <option value="">サンプルを読み込む…</option>
+          </select>
+          <button type="button" class="btn" id="btn-import-text">Handbookテキストから読み込む</button>
+          <button type="button" class="btn" id="btn-save-json">JSONで保存</button>
+          <label class="btn">JSONから読み込む<input type="file" id="input-json" accept=".json,application/json" hidden></label>
+          <button type="button" class="btn danger" id="btn-clear">クリア</button>
+        </div>
+        <form id="form" autocomplete="off" onsubmit="return false"></form>
+      </div>
+
+      <div class="panel preview-pane">
+        <h2>プレビュー（A4・1240×1754px）</h2>
+        <div id="make-status"></div>
+        <div class="export-bar" style="margin:0 0 12px">
+          <button type="button" class="btn primary" id="btn-export">PNGで保存</button>
+          <button type="button" class="btn" id="btn-copy-text">Handbookテキストをコピー</button>
+        </div>
+        <div class="preview-wrap"><canvas id="preview" width="1240" height="1754" aria-label="係の履歴書のプレビュー"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 読むモード ===== -->
+  <section id="mode-read" role="tabpanel" aria-labelledby="tab-read" hidden>
+    <div class="caution" role="note">係の履歴書の中身は、AIへの指示書です。採用する前に、必ず運営者が全文を読んで確認してください。</div>
+    <div class="dropzone" id="dropzone">
+      <p>係の履歴書PNGをここにドラッグ＆ドロップ</p>
+      <label class="btn">ファイルを選ぶ<input type="file" id="input-png" accept="image/png" hidden></label>
+    </div>
+    <div id="read-result" hidden>
+      <div class="read-layout">
+        <div class="panel">
+          <h2>読み込んだ画像</h2>
+          <img id="read-img" class="read-img" alt="読み込んだ係の履歴書">
+        </div>
+        <div class="panel">
+          <div id="read-missing" class="status warn" hidden></div>
+          <div id="read-data" hidden>
+            <h2>裏データの内容</h2>
+            <ul class="checks" id="read-checks"></ul>
+            <dl class="meta" id="read-meta"></dl>
+            <div class="icon-field" style="margin-bottom:12px">
+              <img id="read-icon" class="read-icon" alt="係のアイコン" hidden>
+              <span id="read-noicon" class="hint" hidden>アイコンはありません</span>
+              <button type="button" class="btn" id="btn-save-icon" hidden>アイコンを保存</button>
+            </div>
+            <h2>Handbook全文</h2>
+            <pre class="handbook" id="read-text"></pre>
+            <div class="export-bar">
+              <button type="button" class="btn primary" id="btn-copy-read">コピー</button>
+              <button type="button" class="btn" id="btn-edit-read">作るモードで開く</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="app">OpenPNE AI Handbook ／ 係の履歴書メーカー</footer>
+
+<dialog id="dlg-text">
+  <h2 style="margin-top:0;font-size:16px">Handbookテキストから読み込む</h2>
+  <p class="hint" style="margin:0 0 8px;color:var(--muted);font-size:13px">「【AI Handbook：係名】版」で始まるテキストを貼り付けてください。今の入力内容は置き換えられます。</p>
+  <textarea id="dlg-text-input" aria-label="Handbookテキスト"></textarea>
+  <div class="actions">
+    <button type="button" class="btn" id="dlg-text-cancel">やめる</button>
+    <button type="button" class="btn primary" id="dlg-text-ok">読み込む</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="samples.js"></script>
+<script>
+'use strict';
+
+/* =====================================================================
+ * Handbook モデル
+ *   データ項目の定義・正規化・文字数チェック。
+ *   ここが「作る」「読む」「テキスト」「PNG」のすべての共通の元になる。
+ * ===================================================================== */
+const Handbook = (() => {
+  const FORMAT = 'openpne-handbook';
+  const FORMAT_VERSION = 1;
+
+  // kind: line=1行 / text=複数行 / list=箇条書き / ordered=番号付き
+  const FIELDS = [
+    { key: 'name',       label: '係名',           resume: '氏名',         kind: 'line', max: 20, required: true },
+    { key: 'version',    label: '版',             resume: '氏名の横',     kind: 'line', max: 10, placeholder: 'v1.0' },
+    { key: 'purpose',    label: '目的',           resume: '志望動機',     kind: 'text', max: 120 },
+    { key: 'abilities',  label: 'できること',     resume: '得意なこと',   kind: 'list', maxItems: 5, max: 40 },
+    { key: 'triggers',   label: 'きっかけ',       resume: '勤務時間',     kind: 'list', maxItems: 3, max: 40 },
+    { key: 'scope',      label: '担当範囲・設定', resume: '勤務地',       kind: 'text', max: 150, hint: '担当ルーム、対応言語など（任意）' },
+    { key: 'tools',      label: '使う手足',       resume: '使う道具',     kind: 'list', maxItems: 6, max: 30 },
+    { key: 'steps',      label: '手順',           resume: '仕事の進め方', kind: 'ordered', maxItems: 8, max: 80 },
+    { key: 'donts',      label: 'やらないこと',   resume: '誓約事項',     kind: 'list', maxItems: 8, max: 60 },
+    { key: 'troubles',   label: '困ったとき',     resume: '困ったときは', kind: 'list', maxItems: 4, max: 80 },
+    { key: 'example',    label: '出力の例',       resume: '仕事の見本',   kind: 'text', max: 250 },
+    { key: 'evaluation', label: 'うまくいったかの見方', resume: '評価のしかた', kind: 'list', maxItems: 3, max: 50 },
+  ];
+  const CREDIT_FIELDS = [
+    { key: 'author',       label: 'Handbook作者',       max: 30 },
+    { key: 'illustrator',  label: '絵師',               max: 30 },
+    { key: 'textLicense',  label: 'テキストのライセンス', max: 40 },
+    { key: 'imageLicense', label: '画像のライセンス',     max: 40 },
+  ];
+  const TEXT_LICENSES = ['CC BY 4.0', 'CC BY-SA 4.0', 'CC BY-NC 4.0', 'CC0 1.0', 'All Rights Reserved'];
+  const IMAGE_LICENSES = ['CC BY 4.0', 'CC BY-SA 4.0', 'CC BY-NC 4.0', 'CC0 1.0', 'All Rights Reserved'];
+  const DEFAULT_TEXT_LICENSE = 'CC BY 4.0';
+
+  const isListKind = (kind) => kind === 'list' || kind === 'ordered';
+  const charLen = (s) => Array.from(s || '').length;
+
+  function normLine(s) {
+    return String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
+  }
+  function normText(s) {
+    return String(s ?? '')
+      .replace(/\r\n?/g, '\n')
+      .split('\n').map((l) => l.replace(/\s+$/u, '')).join('\n')
+      .replace(/^\n+|\n+$/g, '');
+  }
+  function normList(v) {
+    const arr = Array.isArray(v) ? v : String(v ?? '').split(/\r\n?|\n/);
+    return arr.map(normLine).filter((x) => x !== '');
+  }
+
+  function emptyKakari() {
+    const k = {};
+    for (const f of FIELDS) k[f.key] = isListKind(f.kind) ? [] : '';
+    return k;
+  }
+  function emptyCredits() {
+    return { author: '', illustrator: '', textLicense: DEFAULT_TEXT_LICENSE, imageLicense: '' };
+  }
+
+  // どこから来たデータでも、同じ形・同じ順のキーにそろえる
+  function normalize(data) {
+    const src = data || {};
+    const sk = src.kakari || {};
+    const kakari = {};
+    for (const f of FIELDS) {
+      if (isListKind(f.kind)) kakari[f.key] = normList(sk[f.key]);
+      else if (f.kind === 'text') kakari[f.key] = normText(sk[f.key]);
+      else kakari[f.key] = normLine(sk[f.key]);
+    }
+    const sc = src.credits || {};
+    const credits = {};
+    for (const f of CREDIT_FIELDS) credits[f.key] = normLine(sc[f.key]);
+    const icon = typeof src.icon === 'string' && Icon.isSafeDataUrl(src.icon) ? src.icon : null;
+    return { kakari, credits, icon };
+  }
+
+  function isEmpty(data) {
+    const { kakari, credits, icon } = normalize(data);
+    if (icon) return false;
+    for (const f of FIELDS) if (isListKind(f.kind) ? kakari[f.key].length : kakari[f.key]) return false;
+    return !credits.author && !credits.illustrator && !credits.imageLicense &&
+      (credits.textLicense === DEFAULT_TEXT_LICENSE || !credits.textLicense);
+  }
+
+  // 文字数・項目数チェック。返り値は { [key]: [メッセージ...] }
+  function validate(data) {
+    const { kakari, credits } = normalize(data);
+    const errors = {};
+    const add = (k, m) => (errors[k] = errors[k] || []).push(m);
+    for (const f of FIELDS) {
+      const v = kakari[f.key];
+      if (isListKind(f.kind)) {
+        if (v.length > f.maxItems) add(f.key, `項目は${f.maxItems}つまでです（いま${v.length}つ）`);
+        v.forEach((item, i) => {
+          const n = charLen(item);
+          if (n > f.max) add(f.key, `${i + 1}つめの項目が${n}字です（上限${f.max}字）`);
+        });
+      } else {
+        const n = charLen(v);
+        if (n > f.max) add(f.key, `${n}字です（上限${f.max}字）`);
+        if (f.required && !v) add(f.key, `${f.label}を入力してください`);
+      }
+    }
+    for (const f of CREDIT_FIELDS) {
+      const n = charLen(credits[f.key]);
+      if (n > f.max) add(f.key, `${n}字です（上限${f.max}字）`);
+    }
+    return errors;
+  }
+
+  return {
+    FORMAT, FORMAT_VERSION, FIELDS, CREDIT_FIELDS, TEXT_LICENSES, IMAGE_LICENSES, DEFAULT_TEXT_LICENSE,
+    isListKind, charLen, normalize, isEmpty, validate, emptyKakari, emptyCredits,
+  };
+})();
+
+/* =====================================================================
+ * Handbookテキスト形式（指示書 4章）
+ * ===================================================================== */
+const HandbookText = (() => {
+  // テキスト上の見出しと、データ項目の対応（出力順）
+  const SECTIONS = [
+    { heading: '係の名前と目的', key: '_namePurpose' },
+    { heading: 'できること', key: 'abilities' },
+    { heading: 'きっかけ', key: 'triggers' },
+    { heading: '担当範囲・設定', key: 'scope' },
+    { heading: '使う手足', key: 'tools' },
+    { heading: '手順', key: 'steps' },
+    { heading: 'やらないこと', key: 'donts' },
+    { heading: '困ったとき', key: 'troubles' },
+    { heading: '出力の例', key: 'example' },
+    { heading: 'うまくいったかの見方', key: 'evaluation' },
+    { heading: 'クレジット', key: '_credits' },
+  ];
+  const fieldOf = (key) => Handbook.FIELDS.find((f) => f.key === key);
+  const squash = (s) => s.replace(/[\s　]+/g, '');
+
+  function licenseLine(c) {
+    const parts = [];
+    if (c.textLicense) parts.push(`テキスト ${c.textLicense}`);
+    if (c.imageLicense) parts.push(`画像 ${c.imageLicense}`);
+    return parts.length ? `ライセンス：${parts.join(' ／ ')}` : '';
+  }
+
+  function serialize(data) {
+    const { kakari: k, credits: c } = Handbook.normalize(data);
+    const blocks = [`【AI Handbook：${k.name}】${k.version}`];
+    for (const s of SECTIONS) {
+      let body = [];
+      if (s.key === '_namePurpose') {
+        if (k.name) body.push(`${k.name}。`);
+        if (k.purpose) body.push(k.purpose);
+      } else if (s.key === '_credits') {
+        if (c.author) body.push(`Handbook作者：${c.author}`);
+        if (c.illustrator) body.push(`絵師：${c.illustrator}`);
+        const lic = licenseLine(c);
+        if (lic) body.push(lic);
+      } else {
+        const f = fieldOf(s.key);
+        const v = k[s.key];
+        if (f.kind === 'ordered') body = v.map((x, i) => `${i + 1}. ${x}`);
+        else if (f.kind === 'list') body = v.map((x) => `・${x}`);
+        else if (v) body = [v];
+      }
+      if (body.length) blocks.push(`■ ${s.heading}\n${body.join('\n')}`);
+    }
+    return blocks.join('\n\n') + '\n';
+  }
+
+  // 見出し（■）単位で分解する。全角・半角スペースや空行の有無の揺れは許容する。
+  function parse(text) {
+    const lines = String(text ?? '').replace(/^﻿/, '').replace(/\r\n?/g, '\n').split('\n');
+    const known = new Map(SECTIONS.map((s) => [squash(s.heading), s]));
+    let title = null;
+    const sections = new Map();
+    const unknown = [];
+    let current = null;
+    for (const raw of lines) {
+      const line = raw.replace(/\s+$/u, '');
+      const t = line.trim();
+      const m = /^【\s*AI\s*Handbook\s*[：:]\s*(.*?)\s*】\s*(.*)$/i.exec(t);
+      if (!title && !current && m) { title = { name: m[1], version: m[2].trim() }; continue; }
+      if (/^[■◼︎]/u.test(t)) {
+        const h = squash(t.replace(/^[■◼︎]+/u, ''));
+        if (known.has(h)) { current = known.get(h); sections.set(current.key, []); continue; }
+        if (!current || current.key === '_credits' || Handbook.isListKind(fieldOf(current.key)?.kind)) {
+          unknown.push(t); current = null; continue;
+        }
+        // 複数行欄の本文にある「■」行は本文として扱う
+      }
+      if (current) sections.get(current.key).push(line);
+    }
+
+    const out = { kakari: Handbook.emptyKakari(), credits: Handbook.emptyCredits() };
+    out.credits.textLicense = '';
+    const k = out.kakari;
+    if (title) { k.name = title.name; k.version = title.version; }
+
+    const textOf = (arr) => (arr || []).join('\n');
+    const listOf = (arr, ordered) => (arr || []).map((l) => l.trim()).filter(Boolean).map((l) =>
+      ordered ? l.replace(/^[0-9０-９]+\s*[.．、)）]\s*/u, '') : l.replace(/^[・･\-*•]\s*/u, ''));
+
+    if (sections.has('_namePurpose')) {
+      const body = sections.get('_namePurpose').slice();
+      while (body.length && !body[0].trim()) body.shift();
+      if (body.length) {
+        const first = body[0].trim().replace(/[。.]$/u, '');
+        if (!k.name) { k.name = first; body.shift(); }
+        else if (first === k.name) body.shift();
+      }
+      k.purpose = textOf(body);
+    }
+    for (const f of Handbook.FIELDS) {
+      if (!sections.has(f.key)) continue;
+      const body = sections.get(f.key);
+      if (Handbook.isListKind(f.kind)) k[f.key] = listOf(body, f.kind === 'ordered');
+      else k[f.key] = textOf(body);
+    }
+    for (const l of sections.get('_credits') || []) {
+      const t = l.trim();
+      let m;
+      if ((m = /^Handbook\s*作者\s*[：:]\s*(.*)$/i.exec(t))) out.credits.author = m[1];
+      else if ((m = /^絵師\s*[：:]\s*(.*)$/.exec(t))) out.credits.illustrator = m[1];
+      else if ((m = /^ライセンス\s*[：:]\s*(.*)$/.exec(t))) {
+        for (const part of m[1].split(/[／\/]/)) {
+          const p = part.trim();
+          let mm;
+          if ((mm = /^テキスト[\s　]*(.*)$/.exec(p))) out.credits.textLicense = mm[1];
+          else if ((mm = /^画像[\s　]*(.*)$/.exec(p))) out.credits.imageLicense = mm[1];
+        }
+      }
+    }
+    const data = Handbook.normalize(out);
+    return { data, unknown, found: !!title || sections.size > 0 };
+  }
+
+  return { serialize, parse };
+})();
+
+/* =====================================================================
+ * PNG チャンク読み書き（iTXt 埋め込み・CRC32）
+ * ===================================================================== */
+const PngChunks = (() => {
+  const SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes, start = 0, end = bytes.length) {
+    let c = 0xffffffff;
+    for (let i = start; i < end; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  const latin1 = (s) => Uint8Array.from(s, (ch) => ch.charCodeAt(0));
+  const typeStr = (b, o) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+
+  function isPng(bytes) {
+    return bytes.length >= 8 && SIG.every((v, i) => bytes[i] === v);
+  }
+
+  // すべてのチャンクを読み、CRC も検査する
+  function readChunks(bytes) {
+    if (!isPng(bytes)) return { ok: false, error: 'PNGファイルではありません', chunks: [] };
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const chunks = [];
+    let off = 8;
+    let error = null;
+    while (off < bytes.length) {
+      if (off + 12 > bytes.length) { error = 'ファイルの終わりが途中で切れています'; break; }
+      const len = dv.getUint32(off);
+      const type = typeStr(bytes, off + 4);
+      if (len > bytes.length - off - 12) { error = `チャンク ${JSON.stringify(type)} の長さが不正です`; break; }
+      const dataStart = off + 8;
+      const crcStored = dv.getUint32(dataStart + len);
+      const crcOk = crc32(bytes, off + 4, dataStart + len) === crcStored;
+      chunks.push({ type, offset: off, data: bytes.subarray(dataStart, dataStart + len), crcOk });
+      off = dataStart + len + 4;
+      if (type === 'IEND') break;
+    }
+    if (!error && (!chunks.length || chunks[chunks.length - 1].type !== 'IEND')) error = 'IEND チャンクがありません';
+    if (!error && off !== bytes.length) error = 'IEND の後ろに余分なデータがあります';
+    const badCrc = chunks.filter((c) => !c.crcOk).map((c) => c.type);
+    return { ok: !error && badCrc.length === 0, error, badCrc, chunks };
+  }
+
+  function makeChunk(type, data) {
+    const out = new Uint8Array(12 + data.length);
+    const dv = new DataView(out.buffer);
+    dv.setUint32(0, data.length);
+    out.set(latin1(type), 4);
+    out.set(data, 8);
+    dv.setUint32(8 + data.length, crc32(out, 4, 8 + data.length));
+    return out;
+  }
+
+  // iTXt：keyword \0 圧縮フラグ(0) 圧縮方式(0) 言語タグ \0 翻訳キーワード \0 本文(UTF-8)
+  function makeITXt(keyword, text) {
+    const kw = latin1(keyword);
+    const body = new TextEncoder().encode(text);
+    const data = new Uint8Array(kw.length + 5 + body.length);
+    data.set(kw, 0);
+    // 続く 5 バイト（\0, 0, 0, 言語タグ終端\0, 翻訳キーワード終端\0）はすべて 0
+    data.set(body, kw.length + 5);
+    return makeChunk('iTXt', data);
+  }
+
+  function parseITXt(data) {
+    const z1 = data.indexOf(0);
+    if (z1 < 1) return null;
+    const keyword = String.fromCharCode(...data.subarray(0, z1));
+    const compressed = data[z1 + 1];
+    let p = z1 + 3;
+    const z2 = data.indexOf(0, p); if (z2 < 0) return null; p = z2 + 1; // 言語タグ
+    const z3 = data.indexOf(0, p); if (z3 < 0) return null; p = z3 + 1; // 翻訳キーワード
+    return { keyword, compressed, textBytes: data.subarray(p) };
+  }
+
+  // IEND の直前に iTXt を挿入する（同じキーワードの既存 iTXt は取り除く）
+  function insertITXt(bytes, keyword, text) {
+    const r = readChunks(bytes);
+    if (!r.ok) throw new Error(r.error || 'PNGの構造が不正です');
+    const parts = [Uint8Array.from(SIG)];
+    for (const c of r.chunks) {
+      if (c.type === 'iTXt') {
+        const t = parseITXt(c.data);
+        if (t && t.keyword === keyword) continue;
+      }
+      if (c.type === 'IEND') parts.push(makeITXt(keyword, text));
+      parts.push(bytes.subarray(c.offset, c.offset + 12 + c.data.length));
+    }
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const out = new Uint8Array(total);
+    let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.length; }
+    return out;
+  }
+
+  // 指定キーワードの iTXt を探して取り出す
+  function extractITXt(bytes, keyword) {
+    const r = readChunks(bytes);
+    let found = null;
+    for (const c of r.chunks) {
+      if (c.type !== 'iTXt') continue;
+      const t = parseITXt(c.data);
+      if (t && t.keyword === keyword) { found = { ...t, crcOk: c.crcOk }; break; }
+    }
+    return { structure: r, found };
+  }
+
+  return { crc32, isPng, readChunks, insertITXt, extractITXt, makeChunk };
+})();
+
+/* =====================================================================
+ * 係の履歴書データ（PNG の裏データ）
+ *   hash は kakari・credits・handbookText・icon の正規化JSONの SHA-256。
+ *   signature は将来の「OpenPNE認定」用の予約欄（今回は常に null）。
+ * ===================================================================== */
+const Record = (() => {
+  const KEYWORD = 'openpne-handbook';
+
+  function canonicalJson(v) {
+    if (v === null || typeof v !== 'object') return JSON.stringify(v ?? null);
+    if (Array.isArray(v)) return '[' + v.map(canonicalJson).join(',') + ']';
+    return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canonicalJson(v[k])).join(',') + '}';
+  }
+
+  async function sha256Hex(text) {
+    if (!(globalThis.crypto && crypto.subtle)) throw new Error('この環境ではハッシュ（Web Crypto API）を使えません');
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function computeHash(rec) {
+    const payload = { kakari: rec.kakari, credits: rec.credits, handbookText: rec.handbookText, icon: rec.icon ?? null };
+    return 'sha256:' + (await sha256Hex(canonicalJson(payload)));
+  }
+
+  function localIsoString(d = new Date()) {
+    const p = (n) => String(n).padStart(2, '0');
+    const off = -d.getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const a = Math.abs(off);
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
+      `${sign}${p(Math.floor(a / 60))}:${p(a % 60)}`;
+  }
+
+  // 入力データから、表面と裏データ共通の「元データ」を作る
+  async function build(data, createdAt = localIsoString()) {
+    const n = Handbook.normalize(data);
+    const rec = {
+      format: Handbook.FORMAT,
+      formatVersion: Handbook.FORMAT_VERSION,
+      kakari: n.kakari,
+      credits: n.credits,
+      handbookText: HandbookText.serialize(n),
+      icon: n.icon,
+      createdAt,
+      hash: null,
+      signature: null,
+    };
+    rec.hash = await computeHash(rec);
+    return rec;
+  }
+
+  // 読み込んだ JSON の検査。表示用の結果を返す
+  async function verify(rec) {
+    const checks = {};
+    const expected = await computeHash(rec);
+    checks.hash = typeof rec.hash === 'string' && rec.hash === expected;
+    checks.text = HandbookText.serialize(rec) === rec.handbookText;
+    checks.certified = rec.signature != null; // 署名検証は未実装。今回は常に「未認定」
+    return checks;
+  }
+
+  function isValidShape(rec) {
+    if (!rec || typeof rec !== 'object') return false;
+    if (rec.format !== Handbook.FORMAT || typeof rec.formatVersion !== 'number') return false;
+    if (!rec.kakari || typeof rec.kakari !== 'object' || !rec.credits || typeof rec.credits !== 'object') return false;
+    if (typeof rec.handbookText !== 'string') return false;
+    for (const f of Handbook.FIELDS) {
+      const v = rec.kakari[f.key];
+      if (v === undefined) continue;
+      if (Handbook.isListKind(f.kind) ? !(Array.isArray(v) && v.every((x) => typeof x === 'string')) : typeof v !== 'string') return false;
+    }
+    if (rec.icon != null && !(typeof rec.icon === 'string' && Icon.isSafeDataUrl(rec.icon))) return false;
+    return true;
+  }
+
+  // PNG バイト列から裏データを取り出す
+  function readFromPng(bytes) {
+    if (!PngChunks.isPng(bytes)) return { status: 'notpng' };
+    const { structure, found } = PngChunks.extractITXt(bytes, KEYWORD);
+    if (!found) return { status: 'missing', structure };
+    if (!found.crcOk) return { status: 'broken', reason: '裏データのチャンクのCRCが一致しません', structure };
+    if (found.compressed) return { status: 'broken', reason: '圧縮された裏データには対応していません', structure };
+    let rec;
+    try {
+      rec = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(found.textBytes));
+    } catch (e) {
+      return { status: 'broken', reason: '裏データのJSONを読めません', structure };
+    }
+    if (!isValidShape(rec)) return { status: 'broken', reason: '裏データの形式が正しくありません', structure };
+    return { status: 'ok', record: rec, structure };
+  }
+
+  function embed(pngBytes, rec) {
+    return PngChunks.insertITXt(pngBytes, KEYWORD, JSON.stringify(rec));
+  }
+
+  return { KEYWORD, canonicalJson, computeHash, build, verify, readFromPng, embed, localIsoString, isValidShape };
+})();
+
+/* =====================================================================
+ * アイコン画像（PNG / JPEG / WebP のみ。正方形にトリミングして 512×512）
+ * ===================================================================== */
+const Icon = (() => {
+  const SIZE = 512;
+  const SAFE_PREFIX = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/;
+  const MAX_DATA_URL = 700 * 1024;
+
+  function isSafeDataUrl(s) {
+    return typeof s === 'string' && s.length < 4 * 1024 * 1024 && SAFE_PREFIX.test(s);
+  }
+
+  // 先頭バイトで形式を判定（拡張子や MIME は信用しない）
+  function sniff(bytes) {
+    const b = bytes;
+    if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+    if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+    if (b.length >= 12 && String.fromCharCode(...b.subarray(0, 4)) === 'RIFF' && String.fromCharCode(...b.subarray(8, 12)) === 'WEBP') return 'image/webp';
+    return null;
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('画像を読み込めませんでした'));
+      img.src = src;
+    });
+  }
+
+  async function fromFile(file) {
+    const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+    const type = sniff(head);
+    if (!type || /svg/i.test(file.type) || /\.svgz?$/i.test(file.name)) {
+      throw new Error('アイコンは PNG / JPEG / WebP の画像だけ使えます（SVGは使えません）');
+    }
+    if (file.size > 20 * 1024 * 1024) throw new Error('画像が大きすぎます（20MBまで）');
+    const url = URL.createObjectURL(new Blob([await file.arrayBuffer()], { type }));
+    try {
+      const img = await loadImage(url);
+      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      if (!s) throw new Error('画像を読み込めませんでした');
+      const c = document.createElement('canvas');
+      c.width = c.height = SIZE;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, SIZE, SIZE);
+      return encode(c);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // PNG を基本にし、大きすぎるとき（写真など）は WebP、それも無理なら JPEG にする
+  function encode(canvas) {
+    const png = canvas.toDataURL('image/png');
+    if (png.length <= MAX_DATA_URL) return png;
+    const webp = canvas.toDataURL('image/webp', 0.9);
+    if (webp.startsWith('data:image/webp') && webp.length <= MAX_DATA_URL) return webp;
+    const c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.drawImage(canvas, 0, 0);
+    for (const q of [0.9, 0.8, 0.7]) {
+      const jpg = c.toDataURL('image/jpeg', q);
+      if (jpg.length <= MAX_DATA_URL) return jpg;
+    }
+    return c.toDataURL('image/jpeg', 0.6);
+  }
+
+  // 保存用に 512×512 の PNG Blob にする
+  async function toPngBlob(dataUrl) {
+    const img = await loadImage(dataUrl);
+    const c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    c.getContext('2d').drawImage(img, 0, 0, SIZE, SIZE);
+    return new Promise((r) => c.toBlob(r, 'image/png'));
+  }
+
+  return { SIZE, isSafeDataUrl, sniff, fromFile, loadImage, toPngBlob };
+})();
+
+/* =====================================================================
+ * 履歴書の表面（Canvas 描画）
+ *   プレビューと書き出しは同じ render() を通る。
+ * ===================================================================== */
+const Resume = (() => {
+  const W = 1240, H = 1754;
+  const FONT_FAMILY = '"Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  const C = {
+    ink: '#222222', sub: '#6a6a6a', faint: '#9a9a9a', line: '#8c8c8c', frame: '#333333',
+    labelBg: '#f3f1ec', accent: '#2f5d8a', over: 'rgba(200, 40, 30, 0.18)',
+  };
+  const M = { left: 64, right: 64, top: 56, bottom: 52 };
+  const BODY = 19, BODY_LH = 29, PAD_Y = 10, PAD_X = 14, LABEL_W = 156;
+  const PHOTO = 236;
+  const ROW_MIN_H = 66; // 欄名と小さな項目名が収まる高さ
+
+  const font = (size, weight = 400) => `${weight} ${size}px ${FONT_FAMILY}`;
+
+  // ---- 文字の折り返し（日本語は1文字単位、英数字は単語単位、簡単な禁則処理つき）----
+  const NO_START = new Set(Array.from('、。，．,.・：；:;!?！？）)]］｝}」』】〕〉》〙〗ー…‥ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ々〻'));
+  const NO_END = new Set(Array.from('（([［｛{「『【〔〈《〘〖'));
+  const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : null;
+  const graphemes = (s) => segmenter ? Array.from(segmenter.segment(s), (x) => x.segment) : Array.from(s);
+
+  function tokenize(s) {
+    const tokens = [];
+    let word = '';
+    for (const g of graphemes(s)) {
+      if (/^[A-Za-z0-9'’\-_@#$%&+=\/~"]$/.test(g)) { word += g; continue; }
+      if (word) { tokens.push(word); word = ''; }
+      tokens.push(g);
+    }
+    if (word) tokens.push(word);
+    return tokens;
+  }
+
+  function wrap(ctx, text, maxW) {
+    const lines = [];
+    for (const para of String(text).split('\n')) {
+      const tokens = tokenize(para);
+      let line = [];
+      let width = 0;
+      const flush = () => { lines.push(line.join('').replace(/\s+$/, '')); line = []; width = 0; };
+      for (let i = 0; i < tokens.length; i++) {
+        let tok = tokens[i];
+        const w = ctx.measureText(tok).width;
+        if (width + w <= maxW || line.length === 0 && w <= maxW) {
+          if (line.length === 0 && tok === ' ') continue;
+          line.push(tok); width += w; continue;
+        }
+        if (w > maxW) { // 1語が1行より長い：文字単位で割る
+          for (const g of graphemes(tok)) {
+            const gw = ctx.measureText(g).width;
+            if (width + gw > maxW && line.length) flush();
+            line.push(g); width += gw;
+          }
+          continue;
+        }
+        // 行頭禁則：行頭に来てはいけない文字は、前の1文字と一緒に次の行へ送る
+        if (NO_START.has(tok) && line.length > 1) {
+          const carried = [tok];
+          while (line.length > 1 && NO_START.has(carried[0])) carried.unshift(line.pop());
+          flush();
+          line.push(...carried); width = ctx.measureText(carried.join('')).width;
+          continue;
+        }
+        // 行末禁則：開きかっこで行が終わらないようにする
+        const carried = [];
+        while (line.length > 1 && NO_END.has(line[line.length - 1])) carried.unshift(line.pop());
+        flush();
+        if (tok === ' ') { for (const c of carried) { line.push(c); width += ctx.measureText(c).width; } continue; }
+        for (const c of carried) { line.push(c); width += ctx.measureText(c).width; }
+        line.push(tok); width += w;
+      }
+      flush();
+    }
+    return lines;
+  }
+
+  // ---- 欄の内容を「描画できる行」に変換 ----
+  function blockLines(ctx, field, value, width) {
+    ctx.font = font(BODY);
+    if (Handbook.isListKind(field.kind)) {
+      if (!value.length) return [];
+      const out = [];
+      value.forEach((item, i) => {
+        const mark = field.kind === 'ordered' ? `${i + 1}.` : '・';
+        const indent = field.kind === 'ordered' ? Math.max(ctx.measureText(`${value.length}.`).width + 8, 26) : BODY;
+        wrap(ctx, item, width - indent).forEach((t, j) => out.push({ mark: j === 0 ? mark : '', indent, text: t }));
+      });
+      return out;
+    }
+    if (!value) return [];
+    return wrap(ctx, value, width).map((t) => ({ mark: '', indent: 0, text: t }));
+  }
+
+  function creditLines(ctx, credits, width) {
+    ctx.font = font(BODY);
+    const dash = (s) => s || '―';
+    const lic = [];
+    lic.push(`テキスト ${dash(credits.textLicense)}`);
+    lic.push(`画像 ${dash(credits.imageLicense)}`);
+    const rows = [
+      `Handbook作者：${dash(credits.author)}　　絵師：${dash(credits.illustrator)}`,
+      `ライセンス：${lic.join(' ／ ')}`,
+    ];
+    return rows.flatMap((r) => wrap(ctx, r, width)).map((t) => ({ mark: '', indent: 0, text: t }));
+  }
+
+  function formatDate(iso) {
+    const d = iso ? new Date(iso) : new Date();
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    if (m) return `${+m[1]}年${+m[2]}月${+m[3]}日`;
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  // 表面に載る文字（フォントの読み込み対象を絞るために使う）
+  function allText(rec) {
+    const k = rec.kakari, c = rec.credits;
+    return ['係の履歴書 現在 年月日 氏名 写真 アイコン 版 推薦者 作成日 作者 絵師 ライセンス テキスト 画像 OpenPNE AI Handbook ―・。0123456789.／：',
+      ...Handbook.FIELDS.map((f) => f.resume + f.label),
+      ...Object.values(k).flat(), ...Object.values(c)].join('');
+  }
+
+  /**
+   * 描画する。返り値 { overflow: はみ出した高さ(px) , overflowLines: 目安の行数 }
+   * rec: { kakari, credits, icon, createdAt }, iconImg: 読み込み済みの Image（なければ null）
+   */
+  function render(canvas, rec, iconImg, { showOverflow = true } = {}) {
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    const k = rec.kakari, c = rec.credits;
+    const L = M.left, R = W - M.right, CW = R - L;
+    const footerTop = H - M.bottom - 22;
+
+    // ---- 表題 ----
+    let y = M.top;
+    ctx.fillStyle = C.ink;
+    ctx.font = font(40, 700);
+    ctx.fillText('係 の 履 歴 書', L, y + 40);
+    ctx.font = font(17);
+    ctx.fillStyle = C.sub;
+    const dateText = `${formatDate(rec.createdAt)} 現在`;
+    ctx.fillText(dateText, R - PHOTO - 24 - ctx.measureText(dateText).width, y + 40);
+    y += 64;
+
+    // ---- 上段：氏名・志望動機（左）と写真（右）----
+    const headL = L, headR = R - PHOTO - 24, headW = headR - headL;
+    const headTop = y;
+    const contentW = (w) => w - LABEL_W - PAD_X * 2;
+    const fName = Handbook.FIELDS[0], fPurpose = Handbook.FIELDS[2];
+
+    // 氏名行
+    const nameRowH = 104;
+    // 志望動機行
+    const purposeLines = blockLines(ctx, fPurpose, k.purpose, contentW(headW));
+    let purposeH = Math.max(1, purposeLines.length) * BODY_LH + PAD_Y * 2;
+    const headH = Math.max(PHOTO, nameRowH + purposeH);
+    purposeH = headH - nameRowH;
+
+    drawLabel(ctx, headL, headTop, nameRowH, fName);
+    // 係名と版
+    ctx.save();
+    ctx.beginPath(); ctx.rect(headL + LABEL_W, headTop, headW - LABEL_W, nameRowH); ctx.clip();
+    ctx.font = font(15); ctx.fillStyle = C.faint;
+    ctx.fillText('係名', headL + LABEL_W + PAD_X, headTop + 26);
+    let nameSize = 46;
+    ctx.font = font(nameSize, 700);
+    const nameText = k.name || '';
+    const verText = k.version || '';
+    ctx.font = font(22);
+    const verW = verText ? ctx.measureText(verText).width + 28 : 0;
+    ctx.font = font(nameSize, 700);
+    while (nameSize > 28 && ctx.measureText(nameText).width > headW - LABEL_W - PAD_X * 2 - verW) {
+      nameSize -= 2; ctx.font = font(nameSize, 700);
+    }
+    ctx.fillStyle = nameText ? C.ink : C.faint;
+    ctx.fillText(nameText || '（係名）', headL + LABEL_W + PAD_X, headTop + 82);
+    if (verText) {
+      const nx = headL + LABEL_W + PAD_X + ctx.measureText(nameText).width + 18;
+      ctx.font = font(22); ctx.fillStyle = C.sub;
+      ctx.fillText(verText, nx, headTop + 82);
+    }
+    ctx.restore();
+
+    drawLabel(ctx, headL, headTop + nameRowH, purposeH, fPurpose);
+    drawLines(ctx, purposeLines, headL + LABEL_W + PAD_X, headTop + nameRowH + PAD_Y);
+
+    // 枠線（上段）
+    ctx.strokeStyle = C.frame; ctx.lineWidth = 2;
+    ctx.strokeRect(headL, headTop, headW, headH);
+    hLine(ctx, headL, headR, headTop + nameRowH, C.line);
+    vLine(ctx, headL + LABEL_W, headTop, headTop + headH, C.line);
+
+    // 写真欄
+    const px = R - PHOTO, py = headTop;
+    if (iconImg) {
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(iconImg, px, py, PHOTO, PHOTO);
+      ctx.strokeStyle = C.frame; ctx.lineWidth = 1.5;
+      ctx.strokeRect(px, py, PHOTO, PHOTO);
+    } else {
+      ctx.save();
+      ctx.setLineDash([8, 6]); ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
+      ctx.strokeRect(px + 0.75, py + 0.75, PHOTO - 1.5, PHOTO - 1.5);
+      ctx.restore();
+      ctx.fillStyle = C.faint; ctx.font = font(26);
+      center(ctx, '写真', px + PHOTO / 2, py + PHOTO / 2 + 2);
+      ctx.font = font(15);
+      center(ctx, '（アイコン）', px + PHOTO / 2, py + PHOTO / 2 + 32);
+    }
+
+    y = headTop + headH + 20;
+
+    // ---- 本体の表 ----
+    const tableTop = y;
+    const rows = [];
+    for (const f of Handbook.FIELDS.slice(3)) rows.push({ field: f, lines: blockLines(ctx, f, k[f.key], contentW(CW)) });
+    rows.push({ field: { resume: '推薦者', label: 'クレジット' }, lines: creditLines(ctx, c, contentW(CW)) });
+    for (const row of rows) {
+      const n = Math.max(1, row.lines.length);
+      row.h = Math.max(ROW_MIN_H, n * BODY_LH + PAD_Y * 2);
+      row.top = y;
+      y += row.h;
+    }
+    const tableBottom = y;
+    const limit = footerTop - 14;
+    const overflow = Math.max(0, tableBottom - limit);
+
+    for (const row of rows) {
+      drawLabel(ctx, L, row.top, row.h, row.field);
+      if (row.lines.length) drawLines(ctx, row.lines, L + LABEL_W + PAD_X, row.top + PAD_Y);
+      else { ctx.font = font(BODY); ctx.fillStyle = C.faint; ctx.fillText('―', L + LABEL_W + PAD_X, row.top + PAD_Y + BODY_LH - 8); }
+      if (row !== rows[0]) hLine(ctx, L, R, row.top, C.line);
+    }
+    ctx.strokeStyle = C.frame; ctx.lineWidth = 2;
+    ctx.strokeRect(L, tableTop, CW, tableBottom - tableTop);
+    vLine(ctx, L + LABEL_W, tableTop, tableBottom, C.line);
+
+    // ---- 最下部 ----
+    // はみ出した部分は表の下端を枠で切り、フッターを上書きで読めるようにする
+    if (overflow > 0) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, limit + 1, W, H - limit);
+      if (showOverflow) {
+        ctx.fillStyle = C.over;
+        ctx.fillRect(0, limit - 40, W, 40);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(W / 2 - 300, limit - 36, 600, 32);
+        ctx.fillStyle = '#b02a1e'; ctx.font = font(18, 700);
+        center(ctx, `ここから下に約${Math.ceil(overflow / BODY_LH)}行ぶんはみ出しています`, W / 2, limit - 14);
+      }
+    }
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    hLine(ctx, L, R, footerTop, C.line);
+    ctx.font = font(14); ctx.fillStyle = C.sub;
+    const foot = [
+      `作者：${c.author || '―'}`,
+      `絵師：${c.illustrator || '―'}`,
+      `ライセンス：テキスト ${c.textLicense || '―'} ／ 画像 ${c.imageLicense || '―'}`,
+      `作成日：${formatDate(rec.createdAt)}`,
+    ].join('　');
+    const brand = 'OpenPNE AI Handbook';
+    ctx.font = font(14, 700);
+    const brandW = ctx.measureText(brand).width;
+    ctx.fillStyle = C.accent;
+    ctx.fillText(brand, R - brandW, footerTop + 26);
+    ctx.font = font(14); ctx.fillStyle = C.sub;
+    let ft = foot;
+    while (ft.length > 4 && ctx.measureText(ft).width > CW - brandW - 24) ft = ft.slice(0, -2);
+    if (ft !== foot) ft = ft.slice(0, -1) + '…';
+    ctx.fillText(ft, L, footerTop + 26);
+
+    return { overflow, overflowLines: Math.ceil(overflow / BODY_LH) };
+  }
+
+  function drawLabel(ctx, x, y, h, field) {
+    ctx.fillStyle = C.labelBg;
+    ctx.fillRect(x, y, LABEL_W, h);
+    ctx.fillStyle = C.ink; ctx.font = font(18, 700);
+    ctx.fillText(field.resume, x + PAD_X, y + PAD_Y + 22);
+    if (field.label && field.resume !== '氏名') {
+      ctx.fillStyle = C.faint; ctx.font = font(13);
+      ctx.fillText(field.label, x + PAD_X, y + PAD_Y + 44);
+    }
+  }
+
+  function drawLines(ctx, lines, x, top) {
+    ctx.font = font(BODY); ctx.fillStyle = C.ink;
+    lines.forEach((ln, i) => {
+      const by = top + i * BODY_LH + BODY_LH - 8;
+      if (ln.mark) {
+        ctx.fillStyle = ln.mark === '・' ? C.ink : C.accent;
+        ctx.fillText(ln.mark, x, by);
+        ctx.fillStyle = C.ink;
+      }
+      ctx.fillText(ln.text, x + ln.indent, by);
+    });
+  }
+
+  function hLine(ctx, x1, x2, y, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, Math.round(y) + 0.5); ctx.lineTo(x2, Math.round(y) + 0.5); ctx.stroke();
+  }
+  function vLine(ctx, x, y1, y2, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, y1); ctx.lineTo(Math.round(x) + 0.5, y2); ctx.stroke();
+  }
+  function center(ctx, text, cx, by) {
+    ctx.fillText(text, cx - ctx.measureText(text).width / 2, by);
+  }
+
+  // ---- フォント（Noto Sans JP）の読み込みを保証する ----
+  async function ensureFonts(rec) {
+    const text = allText(rec);
+    try {
+      await Promise.all([
+        document.fonts.load(`400 ${BODY}px "Noto Sans JP"`, text),
+        document.fonts.load(`700 ${BODY}px "Noto Sans JP"`, text),
+      ]);
+    } catch (e) { /* 下の確認で判定する */ }
+    await document.fonts.ready;
+    const loaded = Array.from(document.fonts).some((f) => f.family.replace(/["']/g, '') === 'Noto Sans JP' && f.status === 'loaded');
+    return loaded && document.fonts.check(`400 ${BODY}px "Noto Sans JP"`, text) && document.fonts.check(`700 ${BODY}px "Noto Sans JP"`, text);
+  }
+
+  return { W, H, render, ensureFonts, wrap };
+})();
+
+/* =====================================================================
+ * 書き出し：元データ → 表面描画 → PNG → 裏データ埋め込み
+ * ===================================================================== */
+const Exporter = (() => {
+  function canvasToBytes(canvas) {
+    return new Promise((resolve, reject) => canvas.toBlob(async (b) => {
+      if (!b) return reject(new Error('PNGを作れませんでした'));
+      resolve(new Uint8Array(await b.arrayBuffer()));
+    }, 'image/png'));
+  }
+
+  async function makePng(data, createdAt) {
+    const rec = await Record.build(data, createdAt);
+    const fontsOk = await Resume.ensureFonts(rec);
+    if (!fontsOk) throw new Error('フォント（Noto Sans JP）を読み込めませんでした。ネットにつながっているか確認して、もう一度お試しください。');
+    const iconImg = rec.icon ? await Icon.loadImage(rec.icon) : null;
+    const canvas = document.createElement('canvas');
+    const res = Resume.render(canvas, rec, iconImg, { showOverflow: false });
+    if (res.overflow > 0) throw new Error(`履歴書の1枚に収まりません（約${res.overflowLines}行ぶん）`);
+    const png = await canvasToBytes(canvas);
+    return { bytes: Record.embed(png, rec), record: rec };
+  }
+
+  function fileName(kakari, ext = 'png') {
+    const safe = (s) => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\s+/g, '_');
+    return ['kakari', safe(kakari.name || '無題'), safe(kakari.version || '')].filter(Boolean).join('_') + '.' + ext;
+  }
+
+  return { makePng, fileName };
+})();
+
+/* =====================================================================
+ * 画面（UI）
+ * ===================================================================== */
+const App = (() => {
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = 'kakari-resume-maker:draft:v1';
+  let state = { kakari: Handbook.emptyKakari(), credits: Handbook.emptyCredits(), icon: null };
+  let iconImg = null;
+  let fontsReady = false;
+  let lastRender = { overflow: 0 };
+  let lastRead = null;
+
+  // ---------- 汎用 ----------
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      if (!ok) throw new Error('コピーできませんでした');
+    }
+  }
+  function el(tag, attrs = {}, ...children) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else e.setAttribute(k, v);
+    }
+    for (const c of children) if (c) e.append(c);
+    return e;
+  }
+
+  // ---------- 保存 ----------
+  function saveDraft() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても続ける */ }
+  }
+  function loadDraft() {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      return s ? Handbook.normalize(JSON.parse(s)) : null;
+    } catch (e) { return null; }
+  }
+
+  // ---------- フォーム ----------
+  function buildForm() {
+    const form = $('form');
+    const hintFor = (f) => {
+      if (Handbook.isListKind(f.kind)) return `1行に1項目・最大${f.maxItems}項目（各${f.max}字まで）` + (f.hint ? `。${f.hint}` : '');
+      return (f.hint ? f.hint + '。' : '') + `${f.max}字まで`;
+    };
+    const fieldBox = (key, label, resume, input, hint) => {
+      const box = el('div', { class: 'field', 'data-key': key });
+      const lab = el('label', { class: 'title', for: `f-${key}` }, el('span', { text: label }));
+      if (resume) lab.append(el('span', { class: 'resume-name', text: `履歴書の「${resume}」` }));
+      box.append(lab);
+      if (hint) box.append(el('div', { class: 'hint', text: hint }));
+      box.append(input, el('div', { class: 'msg' }));
+      return box;
+    };
+
+    const top = el('div', { class: 'row2' });
+    for (const f of Handbook.FIELDS) {
+      let input;
+      if (f.kind === 'line') input = el('input', { type: 'text', id: `f-${f.key}`, placeholder: f.placeholder || '' });
+      else {
+        input = el('textarea', { id: `f-${f.key}`, rows: Handbook.isListKind(f.kind) ? Math.min(f.maxItems, 5) : 3 });
+        if (f.kind === 'ordered') input.placeholder = '1行に1つずつ（番号は自動でつきます）';
+        else if (f.kind === 'list') input.placeholder = '1行に1つずつ（「・」は自動でつきます）';
+      }
+      input.addEventListener('input', () => onInput(f.key, input.value));
+      const box = fieldBox(f.key, f.label, f.resume, input, hintFor(f));
+      if (f.key === 'name' || f.key === 'version') top.append(box); else form.append(box);
+    }
+    form.prepend(top);
+
+    // アイコン
+    const iconBox = el('div', { class: 'field', 'data-key': 'icon' });
+    const thumb = el('div', { class: 'icon-thumb', id: 'icon-thumb', text: '写真' });
+    const fileInput = el('input', { type: 'file', id: 'f-icon', accept: 'image/png,image/jpeg,image/webp', hidden: '' });
+    const pick = el('label', { class: 'btn', text: '画像を選ぶ' });
+    pick.append(fileInput);
+    const remove = el('button', { type: 'button', class: 'btn', id: 'btn-icon-remove', text: '画像を外す' });
+    iconBox.append(
+      el('label', { class: 'title' }, el('span', { text: 'アイコン画像' }), el('span', { class: 'resume-name', text: '履歴書の「写真」' })),
+      el('div', { class: 'hint', text: 'PNG / JPEG / WebP（SVGは不可）。正方形に切り抜いて512×512にします。' }),
+      el('div', { class: 'icon-field' }, thumb, pick, remove),
+      el('div', { class: 'msg' }),
+    );
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      fileInput.value = '';
+      if (!file) return;
+      const msg = iconBox.querySelector('.msg');
+      msg.textContent = '';
+      try {
+        state.icon = await Icon.fromFile(file);
+        await refreshIcon();
+        changed();
+      } catch (e) {
+        msg.textContent = e.message;
+      }
+    });
+    remove.addEventListener('click', async () => { state.icon = null; await refreshIcon(); changed(); });
+
+    // クレジット（推薦者）
+    form.append(el('div', { class: 'group-title', text: '推薦者（クレジット）' }));
+    const credits = el('div', { class: 'row2' });
+    for (const key of ['author', 'illustrator']) {
+      const f = Handbook.CREDIT_FIELDS.find((x) => x.key === key);
+      const input = el('input', { type: 'text', id: `f-${key}` });
+      input.addEventListener('input', () => onCreditInput(key, input.value));
+      credits.append(fieldBox(key, f.label, null, input, `${f.max}字まで`));
+    }
+    credits.append(licenseBox('textLicense', 'テキストのライセンス', Handbook.TEXT_LICENSES));
+    credits.append(licenseBox('imageLicense', '画像のライセンス', Handbook.IMAGE_LICENSES));
+    form.append(credits);
+    form.append(iconBox);
+  }
+
+  function licenseBox(key, label, options) {
+    const box = el('div', { class: 'field', 'data-key': key });
+    const sel = el('select', { id: `f-${key}` });
+    sel.append(el('option', { value: '', text: '（未設定）' }));
+    for (const o of options) sel.append(el('option', { value: o, text: o }));
+    sel.append(el('option', { value: '__other', text: 'その他（自由記入）' }));
+    const other = el('input', { type: 'text', id: `f-${key}-other`, placeholder: 'ライセンスを記入', hidden: '' });
+    const update = () => {
+      other.hidden = sel.value !== '__other';
+      onCreditInput(key, sel.value === '__other' ? other.value : sel.value);
+    };
+    sel.addEventListener('change', () => { update(); if (!other.hidden) other.focus(); });
+    other.addEventListener('input', update);
+    box.append(el('label', { class: 'title', for: `f-${key}` }, el('span', { text: label })), sel, other, el('div', { class: 'msg' }));
+    return box;
+  }
+
+  function fillForm() {
+    for (const f of Handbook.FIELDS) {
+      const v = state.kakari[f.key];
+      $(`f-${f.key}`).value = Handbook.isListKind(f.kind) ? v.join('\n') : v;
+    }
+    $('f-author').value = state.credits.author;
+    $('f-illustrator').value = state.credits.illustrator;
+    for (const key of ['textLicense', 'imageLicense']) {
+      const sel = $(`f-${key}`), other = $(`f-${key}-other`);
+      const v = state.credits[key];
+      const known = Array.from(sel.options).some((o) => o.value === v && o.value !== '__other');
+      sel.value = known ? v : '__other';
+      other.value = known ? '' : v;
+      other.hidden = known;
+    }
+  }
+
+  function onInput(key, raw) {
+    const f = Handbook.FIELDS.find((x) => x.key === key);
+    // 入力中は改行や空行を残すため、そのまま持っておき、正規化は使う側で行う
+    state.kakari[key] = Handbook.isListKind(f.kind) ? raw.split('\n') : raw;
+    changed();
+  }
+  function onCreditInput(key, v) { state.credits[key] = v; changed(); }
+
+  async function refreshIcon() {
+    const thumb = $('icon-thumb');
+    thumb.textContent = '';
+    iconImg = null;
+    if (state.icon) {
+      try { iconImg = await Icon.loadImage(state.icon); } catch (e) { state.icon = null; }
+    }
+    if (iconImg) thumb.append(el('img', { src: state.icon, alt: 'アイコン' }));
+    else thumb.textContent = '写真';
+    $('btn-icon-remove').disabled = !state.icon;
+  }
+
+  // ---------- 検証とプレビュー ----------
+  let renderQueued = false;
+  function changed() {
+    saveDraft();
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => { renderQueued = false; refresh(); });
+  }
+
+  let fontsLoading = null;
+  function refresh() {
+    const data = Handbook.normalize(state);
+    const errors = Handbook.validate(data);
+    for (const box of document.querySelectorAll('#form .field')) {
+      const msgs = errors[box.dataset.key];
+      if (box.dataset.key === 'icon') continue;
+      box.classList.toggle('invalid', !!msgs);
+      box.querySelector('.msg').textContent = msgs ? msgs.join('\n') : '';
+    }
+    const rec = { ...data, createdAt: Record.localIsoString() };
+    lastRender = Resume.render($('preview'), rec, iconImg);
+    if (!fontsReady && !fontsLoading) {
+      fontsLoading = Resume.ensureFonts(rec).then((ok) => { fontsReady = ok; fontsLoading = null; refresh(); });
+    }
+
+    const status = $('make-status');
+    status.textContent = '';
+    const problems = [];
+    const nErr = Object.keys(errors).length;
+    if (nErr) problems.push(`入力欄に${nErr}か所の注意があります（赤い欄を見てください）。`);
+    if (lastRender.overflow > 0) problems.push(`履歴書の1枚に収まりません。あと約${lastRender.overflowLines}行ぶん減らしてください。`);
+    if (!fontsReady && !fontsLoading) problems.push('フォント（Noto Sans JP）を読み込めていません。ネット接続を確認してください。');
+    if (problems.length) status.append(el('div', { class: 'status warn', text: problems.join('\n') }));
+    else if (data.kakari.name) status.append(el('div', { class: 'status ok', text: '全文が1枚に収まっています。' }));
+    const ready = !problems.length && !!data.kakari.name;
+    $('btn-export').disabled = !ready;
+    $('btn-export').title = ready ? '' : '入力の注意をなおすと保存できます';
+  }
+
+  function setData(data) {
+    state = Handbook.normalize(data);
+    fillForm();
+    refreshIcon().then(changed);
+  }
+
+  function confirmReplace() {
+    return Handbook.isEmpty(state) || confirm('今の入力内容を置き換えます。よろしいですか？');
+  }
+
+  // ---------- 作るモードの操作 ----------
+  function bindMake() {
+    const sel = $('sample-select');
+    for (const s of window.KAKARI_SAMPLES || []) sel.append(el('option', { value: s.id, text: s.label }));
+    sel.addEventListener('change', () => {
+      const s = (window.KAKARI_SAMPLES || []).find((x) => x.id === sel.value);
+      sel.value = '';
+      if (s && confirmReplace()) { setData(s.data); toast(`サンプル「${s.label}」を読み込みました`); }
+    });
+
+    $('btn-clear').addEventListener('click', () => {
+      if (confirm('入力内容をすべて消します。よろしいですか？')) {
+        setData({ kakari: Handbook.emptyKakari(), credits: Handbook.emptyCredits(), icon: null });
+      }
+    });
+
+    $('btn-copy-text').addEventListener('click', async () => {
+      try { await copyText(HandbookText.serialize(state)); toast('Handbookテキストをコピーしました'); }
+      catch (e) { toast(e.message); }
+    });
+
+    const dlg = $('dlg-text');
+    $('btn-import-text').addEventListener('click', () => { $('dlg-text-input').value = ''; dlg.showModal(); });
+    $('dlg-text-cancel').addEventListener('click', () => dlg.close());
+    $('dlg-text-ok').addEventListener('click', () => {
+      const r = HandbookText.parse($('dlg-text-input').value);
+      if (!r.found) { alert('Handbookテキストとして読み取れませんでした。「【AI Handbook：係名】」や「■ 見出し」があるか確認してください。'); return; }
+      if (!confirmReplace()) return;
+      dlg.close();
+      setData({ ...r.data, icon: state.icon });
+      toast(r.unknown.length ? `読み込みました（読み取れなかった見出し：${r.unknown.join('、')}）` : 'Handbookテキストを読み込みました');
+    });
+
+    $('btn-save-json').addEventListener('click', async () => {
+      const rec = await Record.build(state);
+      download(new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' }), Exporter.fileName(rec.kakari, 'json'));
+    });
+    $('input-json').addEventListener('change', async (ev) => {
+      const file = ev.target.files[0];
+      ev.target.value = '';
+      if (!file) return;
+      try {
+        const obj = JSON.parse(await file.text());
+        if (!obj || typeof obj !== 'object' || !obj.kakari) throw new Error();
+        if (!confirmReplace()) return;
+        setData(obj);
+        toast('JSONを読み込みました');
+      } catch (e) {
+        alert('JSONを読み込めませんでした。係の履歴書メーカーで保存したJSONか確認してください。');
+      }
+    });
+
+    $('btn-export').addEventListener('click', async () => {
+      const btn = $('btn-export');
+      btn.disabled = true;
+      const label = btn.textContent;
+      btn.textContent = '書き出し中…';
+      try {
+        const { bytes, record } = await Exporter.makePng(state);
+        download(new Blob([bytes], { type: 'image/png' }), Exporter.fileName(record.kakari));
+        toast(`PNGを保存しました（${Math.round(bytes.length / 1024)}KB）`);
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        btn.textContent = label;
+        refresh();
+      }
+    });
+  }
+
+  // ---------- 読むモード ----------
+  const MISSING_MSG = 'この画像には裏データがありません。SNSへのアップロード時に消えた可能性があります。履歴書の表面をClaudeに読ませて取り込んでください。';
+
+  async function analyzePng(bytes) {
+    const r = Record.readFromPng(bytes);
+    if (r.status !== 'ok') return r;
+    const checks = await Record.verify(r.record);
+    checks.structure = r.structure.ok;
+    checks.structureDetail = r.structure.error || (r.structure.badCrc.length ? `CRCが合わないチャンク：${r.structure.badCrc.join(', ')}` : '');
+    return { ...r, checks, match: checks.hash && checks.structure && checks.text };
+  }
+
+  async function readFile(file) {
+    if (!file) return;
+    if (file.size > 30 * 1024 * 1024) { alert('ファイルが大きすぎます（30MBまで）'); return; }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const result = await analyzePng(bytes);
+    showRead(file, bytes, result);
+  }
+
+  function showRead(file, bytes, result) {
+    lastRead = result;
+    $('read-result').hidden = false;
+    const img = $('read-img');
+    if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+
+    const missing = $('read-missing');
+    if (result.status !== 'ok') {
+      $('read-data').hidden = true;
+      missing.hidden = false;
+      missing.textContent = result.status === 'notpng' ? 'PNG画像ではありません。係の履歴書のPNGファイルを選んでください。' : MISSING_MSG;
+      if (result.status === 'broken') missing.append(el('div', { style: 'font-weight:400;font-size:13px;margin-top:4px', text: `（詳細：${result.reason}）` }));
+      return;
+    }
+    missing.hidden = true;
+    $('read-data').hidden = false;
+    const rec = result.record;
+    const c = result.checks;
+
+    const checks = $('read-checks');
+    checks.textContent = '';
+    checks.append(el('li', {
+      class: result.match ? 'ok' : 'ng',
+      text: result.match ? '✓ 一致：表と裏は同じ元データから作られています' : '✗ 不一致：裏データが改変されている可能性があります',
+    }));
+    if (!c.hash) checks.append(el('li', { class: 'ng', text: 'ハッシュが一致しません（裏データの中身が書き換えられています）' }));
+    if (!c.text) checks.append(el('li', { class: 'ng', text: 'Handbook全文と各欄の内容が一致しません' }));
+    if (!c.structure) checks.append(el('li', { class: 'ng', text: `画像ファイルが壊れているか、書き換えられています（${c.structureDetail}）` }));
+    checks.append(el('li', { class: 'na', text: c.certified ? 'OpenPNE認定：署名がありますが、このバージョンでは検証できません' : 'OpenPNE認定：未認定' }));
+
+    const k = rec.kakari || {}, cr = rec.credits || {};
+    const meta = $('read-meta');
+    meta.textContent = '';
+    const rows = [
+      ['係名', k.name], ['版', k.version], ['Handbook作者', cr.author], ['絵師', cr.illustrator],
+      ['ライセンス', `テキスト ${cr.textLicense || '―'} ／ 画像 ${cr.imageLicense || '―'}`],
+      ['作成日時', rec.createdAt], ['ハッシュ', rec.hash],
+    ];
+    for (const [dt, dd] of rows) meta.append(el('dt', { text: dt }), el('dd', { text: String(dd || '―') }));
+
+    $('read-text').textContent = rec.handbookText;
+
+    const icon = $('read-icon');
+    const hasIcon = typeof rec.icon === 'string' && Icon.isSafeDataUrl(rec.icon);
+    icon.hidden = !hasIcon;
+    $('btn-save-icon').hidden = !hasIcon;
+    $('read-noicon').hidden = hasIcon;
+    if (hasIcon) icon.src = rec.icon; else icon.removeAttribute('src');
+  }
+
+  function bindRead() {
+    const dz = $('dropzone');
+    $('input-png').addEventListener('change', (ev) => { const f = ev.target.files[0]; ev.target.value = ''; readFile(f); });
+    dz.addEventListener('dragover', (ev) => { ev.preventDefault(); dz.classList.add('over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+    dz.addEventListener('drop', (ev) => {
+      ev.preventDefault(); dz.classList.remove('over');
+      readFile(ev.dataTransfer.files[0]);
+    });
+    // 画面のどこにドロップしても、ブラウザが画像を開いてしまわないようにする
+    window.addEventListener('dragover', (ev) => ev.preventDefault());
+    window.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      if (!$('mode-read').hidden && ev.target !== dz && !dz.contains(ev.target)) readFile(ev.dataTransfer.files[0]);
+    });
+
+    $('btn-copy-read').addEventListener('click', async () => {
+      if (!lastRead?.record) return;
+      try { await copyText(lastRead.record.handbookText); toast('Handbook全文をコピーしました'); }
+      catch (e) { toast(e.message); }
+    });
+    $('btn-save-icon').addEventListener('click', async () => {
+      const rec = lastRead?.record;
+      if (!rec?.icon) return;
+      const blob = await Icon.toPngBlob(rec.icon);
+      download(blob, Exporter.fileName(Handbook.normalize(rec).kakari).replace(/\.png$/, '_icon.png'));
+    });
+    $('btn-edit-read').addEventListener('click', () => {
+      const rec = lastRead?.record;
+      if (!rec || !confirmReplace()) return;
+      setData(rec);
+      switchMode('make');
+    });
+  }
+
+  // ---------- タブ ----------
+  function switchMode(mode) {
+    for (const m of ['make', 'read']) {
+      $(`tab-${m}`).setAttribute('aria-selected', String(m === mode));
+      $(`mode-${m}`).hidden = m !== mode;
+    }
+    try { localStorage.setItem('kakari-resume-maker:mode', mode); } catch (e) { /* 無視 */ }
+  }
+
+  function init() {
+    buildForm();
+    bindMake();
+    bindRead();
+    $('tab-make').addEventListener('click', () => switchMode('make'));
+    $('tab-read').addEventListener('click', () => switchMode('read'));
+    let mode = 'make';
+    try { mode = localStorage.getItem('kakari-resume-maker:mode') || 'make'; } catch (e) { /* 無視 */ }
+    switchMode(mode === 'read' ? 'read' : 'make');
+    setData(loadDraft() || state);
+  }
+
+  return { init, analyzePng, setData, getState: () => state, refresh };
+})();
+
+// テストや将来の拡張（係図鑑・認定など）から使えるように公開しておく
+window.KakariResume = { Handbook, HandbookText, PngChunks, Record, Icon, Resume, Exporter, App };
+App.init();
+</script>
+</body>
+</html>
