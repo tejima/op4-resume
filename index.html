@@ -158,7 +158,7 @@ fieldset { border: none; padding: 0; margin: 0; }
 .status.ok { background: var(--ok-soft); color: var(--ok); }
 .status.info { background: var(--accent-soft); color: var(--text); }
 .preview-wrap { background: var(--surface-2); border-radius: 8px; padding: 8px; }
-.preview-wrap canvas { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.15); }
+.preview-wrap canvas { display: block; width: 100%; height: auto; background: #f8f1df; box-shadow: 0 1px 6px rgba(0,0,0,.15); }
 .export-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 .caution {
@@ -172,7 +172,7 @@ fieldset { border: none; padding: 0; margin: 0; }
 .dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
 .read-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
 @media (min-width: 960px) { .read-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: start; } }
-.read-img { width: 100%; height: auto; display: block; border: 1px solid var(--border); background: #fff; }
+.read-img { width: 100%; height: auto; display: block; border: 1px solid var(--border); background: #f8f1df; }
 dl.meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0 0 12px; }
 dl.meta dt { color: var(--muted); font-size: 13px; }
 dl.meta dd { margin: 0; overflow-wrap: anywhere; }
@@ -895,7 +895,7 @@ const Resume = (() => {
   const FONT_FAMILY = '"Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
   const C = {
     ink: '#222222', sub: '#6a6a6a', faint: '#9a9a9a', line: '#8c8c8c', frame: '#333333',
-    labelBg: '#f3f1ec', accent: '#2f5d8a', over: 'rgba(200, 40, 30, 0.18)',
+    paper: '#f8f1df', labelBg: 'rgba(150, 120, 60, 0.09)', accent: '#2f5d8a', over: 'rgba(200, 40, 30, 0.18)',
   };
   const M = { left: 64, right: 64, top: 56, bottom: 52 };
   const BODY = 20, BODY_LH = 31, PAD_Y = 10, PAD_X = 14, LABEL_W = 140;
@@ -1017,8 +1017,7 @@ const Resume = (() => {
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(paper(), 0, 0);
     const k = rec.kakari, c = rec.credits;
     const L = M.left, R = W - M.right, CW = R - L;
     const footerTop = H - M.bottom - 22;
@@ -1117,12 +1116,11 @@ const Resume = (() => {
     // ---- 最下部 ----
     // はみ出した部分は表の下端を枠で切り、フッターを上書きで読めるようにする
     if (overflow > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, limit + 1, W, H - limit);
+      ctx.drawImage(paper(), 0, limit + 1, W, H - limit - 1, 0, limit + 1, W, H - limit - 1);
       if (showOverflow) {
         ctx.fillStyle = C.over;
         ctx.fillRect(0, limit - 40, W, 40);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = C.paper;
         ctx.fillRect(W / 2 - 300, limit - 36, 600, 32);
         ctx.fillStyle = '#b02a1e'; ctx.font = font(18, 700);
         center(ctx, `ここから下に約${Math.ceil(overflow / BODY_LH)}行ぶんはみ出しています`, W / 2, limit - 14);
@@ -1149,6 +1147,63 @@ const Resume = (() => {
     ctx.fillText(ft, L, footerTop + 26);
 
     return { overflow, overflowLines: Math.ceil(overflow / BODY_LH) };
+  }
+
+  // ---- 紙（クリーム色の地に、ムラ・周辺の陰り・粒・繊維）。毎回同じ模様になるよう乱数は種つき ----
+  let paperCache = null;
+  function paper() {
+    if (paperCache) return paperCache;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    let seed = 1754;
+    const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    // 地の色に、ムラ（粗い・細かい2段のなめらかなノイズ）と周辺の陰りを足す。
+    // 色は整数の段階で決め、ディザをかけない（PNGが重くならないように）
+    const noise = (gx, gy) => {
+      const grid = Array.from({ length: (gx + 1) * (gy + 1) }, rand);
+      const ease = (t) => t * t * (3 - 2 * t);
+      return (x, y) => {
+        const fx = x / W * gx, fy = y / H * gy, x0 = Math.floor(fx), y0 = Math.floor(fy);
+        const sx = ease(fx - x0), sy = ease(fy - y0);
+        const g = (i, j) => grid[Math.min(j, gy) * (gx + 1) + Math.min(i, gx)];
+        return (g(x0, y0) * (1 - sx) + g(x0 + 1, y0) * sx) * (1 - sy) + (g(x0, y0 + 1) * (1 - sx) + g(x0 + 1, y0 + 1) * sx) * sy;
+      };
+    };
+    const coarse = noise(6, 8), fine = noise(22, 31);
+    const base = [248, 241, 223], tone = [1.5, 2, 3.5];
+    const img = ctx.createImageData(W, H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const vig = Math.max(0, Math.hypot((x - W / 2) / (W / 2), (y - H / 2) / (H / 2)) - 0.65);
+        const lv = Math.round(coarse(x, y) * 3 + fine(x, y) * 1.5 + vig * 9);
+        const i = (y * W + x) * 4;
+        img.data[i] = base[0] - tone[0] * lv;
+        img.data[i + 1] = base[1] - tone[1] * lv;
+        img.data[i + 2] = base[2] - tone[2] * lv;
+        img.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    // ところどころの小さな粒（多すぎるとPNGが重くなるので控えめに）
+    for (let i = 0; i < 1500; i++) {
+      ctx.fillStyle = `rgba(120, 92, 45, ${0.08 + rand() * 0.10})`;
+      ctx.fillRect(Math.round(rand() * W), Math.round(rand() * H), 1 + Math.round(rand()), 1 + Math.round(rand()));
+    }
+    // 繊維
+    ctx.lineWidth = 1; ctx.lineCap = 'round';
+    for (let i = 0; i < 260; i++) {
+      const x = rand() * W, y = rand() * H, len = 8 + rand() * 26, a = rand() * Math.PI;
+      ctx.strokeStyle = `rgba(130, 100, 50, ${0.06 + rand() * 0.08})`;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + Math.cos(a + 0.6) * len / 2, y + Math.sin(a + 0.6) * len / 2, x + Math.cos(a) * len, y + Math.sin(a) * len);
+      ctx.stroke();
+    }
+    // 紙の縁（白い画面の上でも紙の輪郭がわかるように）
+    ctx.strokeStyle = 'rgba(130, 100, 50, 0.35)'; ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, W - 2, H - 2);
+    return (paperCache = c);
   }
 
   function drawLabel(ctx, x, y, h, field) {
