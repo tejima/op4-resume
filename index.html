@@ -128,7 +128,6 @@ select.btn { appearance: auto; }
 fieldset { border: none; padding: 0; margin: 0; }
 .field { margin-bottom: 14px; }
 .field label.title { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 14px; }
-.field label.title .resume-name { font-weight: 400; color: var(--muted); font-size: 12px; }
 .field .hint { color: var(--muted); font-size: 12px; margin: 2px 0 4px; }
 .field input[type="text"], .field textarea, .field select {
   width: 100%; font: inherit; font-size: 15px; color: var(--text);
@@ -297,8 +296,8 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="sample-icons.js"></script>
-<script src="samples.js"></script>
+<script src="sample-icons.js?v=3"></script>
+<script src="samples.js?v=3"></script>
 <script>
 'use strict';
 
@@ -309,22 +308,16 @@ footer.app { text-align: center; color: var(--muted); font-size: 12px; padding: 
  * ===================================================================== */
 const Handbook = (() => {
   const FORMAT = 'openpne-handbook';
-  const FORMAT_VERSION = 1;
+  const FORMAT_VERSION = 2;
 
   // kind: line=1行 / text=複数行 / list=箇条書き / ordered=番号付き
   const FIELDS = [
-    { key: 'name',       label: '係名',           resume: '氏名',         kind: 'line', max: 20, required: true },
-    { key: 'version',    label: '版',             resume: '氏名の横',     kind: 'line', max: 10, placeholder: 'v1.0' },
-    { key: 'purpose',    label: '目的',           resume: '業務概要',     kind: 'text', max: 120 },
-    { key: 'abilities',  label: 'できること',     resume: 'スキル',   kind: 'list', maxItems: 5, max: 40 },
-    { key: 'triggers',   label: 'きっかけ',       resume: '稼働タイミング',     kind: 'list', maxItems: 3, max: 40 },
-    { key: 'scope',      label: '担当範囲・設定', resume: '担当範囲',       kind: 'text', max: 150, hint: '担当ルーム、対応言語など（任意）' },
-    { key: 'tools',      label: '使う手足',       resume: '使用ツール',     kind: 'list', maxItems: 6, max: 30 },
-    { key: 'steps',      label: '手順',           resume: '業務フロー', kind: 'ordered', maxItems: 8, max: 80 },
-    { key: 'donts',      label: 'やらないこと',   resume: '遵守事項',     kind: 'list', maxItems: 8, max: 60 },
-    { key: 'troubles',   label: '困ったとき',     resume: '例外時の対応', kind: 'list', maxItems: 4, max: 80 },
-    { key: 'example',    label: '出力の例',       resume: '成果物サンプル',   kind: 'text', max: 250 },
-    { key: 'evaluation', label: 'うまくいったかの見方', resume: '評価指標', kind: 'list', maxItems: 3, max: 50 },
+    { key: 'name',      label: '係名',         kind: 'line', max: 20, required: true },
+    { key: 'version',   label: '版',           kind: 'line', max: 10, placeholder: 'v1.0' },
+    { key: 'abilities', label: '能力',         kind: 'list', maxItems: 5, max: 45, hint: 'この係の役目と、できること' },
+    { key: 'triggers',  label: 'タイミング',   kind: 'list', maxItems: 3, max: 45, hint: '動き出すきっかけ' },
+    { key: 'steps',     label: '手順',         kind: 'ordered', maxItems: 8, max: 90 },
+    { key: 'donts',     label: 'やらないこと', kind: 'list', maxItems: 8, max: 45 },
   ];
   const CREDIT_FIELDS = [
     { key: 'author',       label: 'Handbook作者',       max: 30 },
@@ -424,17 +417,12 @@ const Handbook = (() => {
  * ===================================================================== */
 const HandbookText = (() => {
   // テキスト上の見出しと、データ項目の対応（出力順）
+  // aliases は formatVersion 1 の見出し（読み込みだけ受け付ける）
   const SECTIONS = [
-    { heading: '係の名前と目的', key: '_namePurpose' },
-    { heading: 'できること', key: 'abilities' },
-    { heading: 'きっかけ', key: 'triggers' },
-    { heading: '担当範囲・設定', key: 'scope' },
-    { heading: '使う手足', key: 'tools' },
+    { heading: '能力', key: 'abilities', aliases: ['できること'] },
+    { heading: 'タイミング', key: 'triggers', aliases: ['きっかけ'] },
     { heading: '手順', key: 'steps' },
     { heading: 'やらないこと', key: 'donts' },
-    { heading: '困ったとき', key: 'troubles' },
-    { heading: '出力の例', key: 'example' },
-    { heading: 'うまくいったかの見方', key: 'evaluation' },
     { heading: 'クレジット', key: '_credits' },
   ];
   const fieldOf = (key) => Handbook.FIELDS.find((f) => f.key === key);
@@ -452,10 +440,7 @@ const HandbookText = (() => {
     const blocks = [`【AI Handbook：${k.name}】${k.version}`];
     for (const s of SECTIONS) {
       let body = [];
-      if (s.key === '_namePurpose') {
-        if (k.name) body.push(`${k.name}。`);
-        if (k.purpose) body.push(k.purpose);
-      } else if (s.key === '_credits') {
+      if (s.key === '_credits') {
         if (c.author) body.push(`Handbook作者：${c.author}`);
         if (c.illustrator) body.push(`絵師：${c.illustrator}`);
         const lic = licenseLine(c);
@@ -475,7 +460,7 @@ const HandbookText = (() => {
   // 見出し（■）単位で分解する。全角・半角スペースや空行の有無の揺れは許容する。
   function parse(text) {
     const lines = String(text ?? '').replace(/^﻿/, '').replace(/\r\n?/g, '\n').split('\n');
-    const known = new Map(SECTIONS.map((s) => [squash(s.heading), s]));
+    const known = new Map(SECTIONS.flatMap((s) => [s.heading, ...(s.aliases || [])].map((h) => [squash(h), s])));
     let title = null;
     const sections = new Map();
     const unknown = [];
@@ -505,16 +490,6 @@ const HandbookText = (() => {
     const listOf = (arr, ordered) => (arr || []).map((l) => l.trim()).filter(Boolean).map((l) =>
       ordered ? l.replace(/^[0-9０-９]+\s*[.．、)）]\s*/u, '') : l.replace(/^[・･\-*•]\s*/u, ''));
 
-    if (sections.has('_namePurpose')) {
-      const body = sections.get('_namePurpose').slice();
-      while (body.length && !body[0].trim()) body.shift();
-      if (body.length) {
-        const first = body[0].trim().replace(/[。.]$/u, '');
-        if (!k.name) { k.name = first; body.shift(); }
-        else if (first === k.name) body.shift();
-      }
-      k.purpose = textOf(body);
-    }
     for (const f of Handbook.FIELDS) {
       if (!sections.has(f.key)) continue;
       const body = sections.get(f.key);
@@ -717,7 +692,8 @@ const Record = (() => {
     const checks = {};
     const expected = await computeHash(rec);
     checks.hash = typeof rec.hash === 'string' && rec.hash === expected;
-    checks.text = HandbookText.serialize(rec) === rec.handbookText;
+    // 旧形式（項目の違う formatVersion 1）は全文を作り直せないので、照合を省く（null）
+    checks.text = rec.formatVersion === Handbook.FORMAT_VERSION ? HandbookText.serialize(rec) === rec.handbookText : null;
     checks.certified = rec.signature != null; // 署名検証は未実装。今回は常に「未認定」
     return checks;
   }
@@ -922,9 +898,8 @@ const Resume = (() => {
     labelBg: '#f3f1ec', accent: '#2f5d8a', over: 'rgba(200, 40, 30, 0.18)',
   };
   const M = { left: 64, right: 64, top: 56, bottom: 52 };
-  const BODY = 19, BODY_LH = 29, PAD_Y = 10, PAD_X = 14, LABEL_W = 156;
+  const BODY = 20, BODY_LH = 31, PAD_Y = 10, PAD_X = 14, LABEL_W = 140;
   const PHOTO = 236;
-  const ROW_MIN_H = 66; // 欄名と小さな項目名が収まる高さ
 
   const font = (size, weight = 400) => `${weight} ${size}px ${FONT_FAMILY}`;
 
@@ -1029,8 +1004,8 @@ const Resume = (() => {
   // 表面に載る文字（フォントの読み込み対象を絞るために使う）
   function allText(rec) {
     const k = rec.kakari, c = rec.credits;
-    return ['係のスキルシート 現在 年月日 氏名 写真 アイコン 版 クレジット 作成日 作者 絵師 ライセンス テキスト 画像 OpenPNE AI Handbook ―・。0123456789.／：',
-      ...Handbook.FIELDS.map((f) => f.resume + f.label),
+    return ['係のスキルシート 現在 年月日 アイコン未設定 クレジット 作成日 作者 絵師 ライセンス テキスト 画像 OpenPNE AI Handbook ―・。0123456789.／：',
+      ...Handbook.FIELDS.map((f) => f.label),
       ...Object.values(k).flat(), ...Object.values(c)].join('');
   }
 
@@ -1059,56 +1034,41 @@ const Resume = (() => {
     ctx.fillText(dateText, R - PHOTO - 24 - ctx.measureText(dateText).width, y + 40);
     y += 64;
 
-    // ---- 上段：氏名・志望動機（左）と写真（右）----
+    // ---- 上段：係名と版（左）と写真（右）----
     const headL = L, headR = R - PHOTO - 24, headW = headR - headL;
     const headTop = y;
+    const headH = M.top + PHOTO - headTop;
     const contentW = (w) => w - LABEL_W - PAD_X * 2;
-    const fName = Handbook.FIELDS[0], fPurpose = Handbook.FIELDS[2];
 
-    // 氏名行
-    const nameRowH = 104;
-    // 志望動機行
-    const purposeLines = blockLines(ctx, fPurpose, k.purpose, contentW(headW));
-    let purposeH = Math.max(1, purposeLines.length) * BODY_LH + PAD_Y * 2;
-    const headH = Math.max(PHOTO, nameRowH + purposeH);
-    purposeH = headH - nameRowH;
-
-    drawLabel(ctx, headL, headTop, nameRowH, fName);
-    // 係名と版
+    drawLabel(ctx, headL, headTop, headH, Handbook.FIELDS[0]);
     ctx.save();
-    ctx.beginPath(); ctx.rect(headL + LABEL_W, headTop, headW - LABEL_W, nameRowH); ctx.clip();
-    ctx.font = font(15); ctx.fillStyle = C.faint;
-    ctx.fillText('係名', headL + LABEL_W + PAD_X, headTop + 26);
-    let nameSize = 46;
-    ctx.font = font(nameSize, 700);
+    ctx.beginPath(); ctx.rect(headL + LABEL_W, headTop, headW - LABEL_W, headH); ctx.clip();
+    let nameSize = 52;
     const nameText = k.name || '';
     const verText = k.version || '';
-    ctx.font = font(22);
+    ctx.font = font(24);
     const verW = verText ? ctx.measureText(verText).width + 28 : 0;
     ctx.font = font(nameSize, 700);
-    while (nameSize > 28 && ctx.measureText(nameText).width > headW - LABEL_W - PAD_X * 2 - verW) {
+    while (nameSize > 20 && ctx.measureText(nameText).width > headW - LABEL_W - PAD_X * 2 - 6 - verW) {
       nameSize -= 2; ctx.font = font(nameSize, 700);
     }
+    const nameY = headTop + headH / 2 + nameSize * 0.36;
     ctx.fillStyle = nameText ? C.ink : C.faint;
-    ctx.fillText(nameText || '（係名）', headL + LABEL_W + PAD_X, headTop + 82);
+    ctx.fillText(nameText || '（係名）', headL + LABEL_W + PAD_X + 6, nameY);
     if (verText) {
-      const nx = headL + LABEL_W + PAD_X + ctx.measureText(nameText).width + 18;
-      ctx.font = font(22); ctx.fillStyle = C.sub;
-      ctx.fillText(verText, nx, headTop + 82);
+      const nx = headL + LABEL_W + PAD_X + 6 + ctx.measureText(nameText).width + 18;
+      ctx.font = font(24); ctx.fillStyle = C.sub;
+      ctx.fillText(verText, nx, nameY);
     }
     ctx.restore();
 
-    drawLabel(ctx, headL, headTop + nameRowH, purposeH, fPurpose);
-    drawLines(ctx, purposeLines, headL + LABEL_W + PAD_X, headTop + nameRowH + PAD_Y);
-
-    // 枠線（上段）
     ctx.strokeStyle = C.frame; ctx.lineWidth = 2;
     ctx.strokeRect(headL, headTop, headW, headH);
-    hLine(ctx, headL, headR, headTop + nameRowH, C.line);
     vLine(ctx, headL + LABEL_W, headTop, headTop + headH, C.line);
 
+    const py = M.top;
     // 写真欄
-    const px = R - PHOTO, py = headTop;
+    const px = R - PHOTO;
     if (iconImg) {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(iconImg, px, py, PHOTO, PHOTO);
@@ -1127,16 +1087,16 @@ const Resume = (() => {
       center(ctx, 'アイコン未設定', px + PHOTO / 2, py + PHOTO - 12);
     }
 
-    y = headTop + headH + 20;
+    y = M.top + PHOTO + 20;
 
     // ---- 本体の表 ----
     const tableTop = y;
     const rows = [];
-    for (const f of Handbook.FIELDS.slice(3)) rows.push({ field: f, lines: blockLines(ctx, f, k[f.key], contentW(CW)) });
-    rows.push({ field: { resume: 'クレジット', label: '作者・ライセンス' }, lines: creditLines(ctx, c, contentW(CW)) });
+    for (const f of Handbook.FIELDS.slice(2)) rows.push({ field: f, lines: blockLines(ctx, f, k[f.key], contentW(CW)) });
+    rows.push({ field: { label: 'クレジット' }, lines: creditLines(ctx, c, contentW(CW)) });
     for (const row of rows) {
       const n = Math.max(1, row.lines.length);
-      row.h = Math.max(ROW_MIN_H, n * BODY_LH + PAD_Y * 2);
+      row.h = n * BODY_LH + PAD_Y * 2;
       row.top = y;
       y += row.h;
     }
@@ -1147,7 +1107,7 @@ const Resume = (() => {
     for (const row of rows) {
       drawLabel(ctx, L, row.top, row.h, row.field);
       if (row.lines.length) drawLines(ctx, row.lines, L + LABEL_W + PAD_X, row.top + PAD_Y);
-      else { ctx.font = font(BODY); ctx.fillStyle = C.faint; ctx.fillText('―', L + LABEL_W + PAD_X, row.top + PAD_Y + BODY_LH - 8); }
+      else { ctx.font = font(BODY); ctx.fillStyle = C.faint; ctx.fillText('―', L + LABEL_W + PAD_X, row.top + PAD_Y + BODY_LH - 9); }
       if (row !== rows[0]) hLine(ctx, L, R, row.top, C.line);
     }
     ctx.strokeStyle = C.frame; ctx.lineWidth = 2;
@@ -1195,17 +1155,13 @@ const Resume = (() => {
     ctx.fillStyle = C.labelBg;
     ctx.fillRect(x, y, LABEL_W, h);
     ctx.fillStyle = C.ink; ctx.font = font(18, 700);
-    ctx.fillText(field.resume, x + PAD_X, y + PAD_Y + 22);
-    if (field.label && field.resume !== '氏名') {
-      ctx.fillStyle = C.faint; ctx.font = font(13);
-      ctx.fillText(field.label, x + PAD_X, y + PAD_Y + 44);
-    }
+    ctx.fillText(field.label, x + PAD_X, y + PAD_Y + BODY_LH - 9);
   }
 
   function drawLines(ctx, lines, x, top) {
     ctx.font = font(BODY); ctx.fillStyle = C.ink;
     lines.forEach((ln, i) => {
-      const by = top + i * BODY_LH + BODY_LH - 8;
+      const by = top + i * BODY_LH + BODY_LH - 9;
       if (ln.mark) {
         ctx.fillStyle = ln.mark === '・' ? C.ink : C.accent;
         ctx.fillText(ln.mark, x, by);
@@ -1343,13 +1299,12 @@ const App = (() => {
   function buildForm() {
     const form = $('form');
     const hintFor = (f) => {
-      if (Handbook.isListKind(f.kind)) return `1行に1項目・最大${f.maxItems}項目（各${f.max}字まで）` + (f.hint ? `。${f.hint}` : '');
+      if (Handbook.isListKind(f.kind)) return (f.hint ? f.hint + '。' : '') + `1行に1項目・最大${f.maxItems}項目（各${f.max}字まで）`;
       return (f.hint ? f.hint + '。' : '') + `${f.max}字まで`;
     };
-    const fieldBox = (key, label, resume, input, hint) => {
+    const fieldBox = (key, label, input, hint) => {
       const box = el('div', { class: 'field', 'data-key': key });
       const lab = el('label', { class: 'title', for: `f-${key}` }, el('span', { text: label }));
-      if (resume) lab.append(el('span', { class: 'resume-name', text: `スキルシートの「${resume}」` }));
       box.append(lab);
       if (hint) box.append(el('div', { class: 'hint', text: hint }));
       box.append(input, el('div', { class: 'msg' }));
@@ -1366,7 +1321,7 @@ const App = (() => {
         else if (f.kind === 'list') input.placeholder = '1行に1つずつ（「・」は自動でつきます）';
       }
       input.addEventListener('input', () => onInput(f.key, input.value));
-      const box = fieldBox(f.key, f.label, f.resume, input, hintFor(f));
+      const box = fieldBox(f.key, f.label, input, hintFor(f));
       if (f.key === 'name' || f.key === 'version') top.append(box); else form.append(box);
     }
     form.prepend(top);
@@ -1379,7 +1334,7 @@ const App = (() => {
     pick.append(fileInput);
     const remove = el('button', { type: 'button', class: 'btn', id: 'btn-icon-remove', text: '画像を外す' });
     iconBox.append(
-      el('label', { class: 'title' }, el('span', { text: 'アイコン画像' }), el('span', { class: 'resume-name', text: 'スキルシートの「写真」' })),
+      el('label', { class: 'title' }, el('span', { text: 'アイコン画像' })),
       el('div', { class: 'hint', text: 'PNG / JPEG / WebP（SVGは不可）。正方形に切り抜いて512×512にします。' }),
       el('div', { class: 'icon-field' }, thumb, pick, remove),
       el('div', { class: 'msg' }),
@@ -1407,7 +1362,7 @@ const App = (() => {
       const f = Handbook.CREDIT_FIELDS.find((x) => x.key === key);
       const input = el('input', { type: 'text', id: `f-${key}` });
       input.addEventListener('input', () => onCreditInput(key, input.value));
-      credits.append(fieldBox(key, f.label, null, input, `${f.max}字まで`));
+      credits.append(fieldBox(key, f.label, input, `${f.max}字まで`));
     }
     credits.append(licenseBox('textLicense', 'テキストのライセンス', Handbook.TEXT_LICENSES));
     credits.append(licenseBox('imageLicense', '画像のライセンス', Handbook.IMAGE_LICENSES));
@@ -1597,7 +1552,7 @@ const App = (() => {
     const checks = await Record.verify(r.record);
     checks.structure = r.structure.ok;
     checks.structureDetail = r.structure.error || (r.structure.badCrc.length ? `CRCが合わないチャンク：${r.structure.badCrc.join(', ')}` : '');
-    return { ...r, checks, match: checks.hash && checks.structure && checks.text };
+    return { ...r, checks, match: checks.hash && checks.structure && checks.text !== false };
   }
 
   async function readFile(file) {
@@ -1635,7 +1590,8 @@ const App = (() => {
       text: result.match ? '✓ 一致：表と裏は同じ元データから作られています' : '✗ 不一致：裏データが改変されている可能性があります',
     }));
     if (!c.hash) checks.append(el('li', { class: 'ng', text: 'ハッシュが一致しません（裏データの中身が書き換えられています）' }));
-    if (!c.text) checks.append(el('li', { class: 'ng', text: 'Handbook全文と各欄の内容が一致しません' }));
+    if (c.text === false) checks.append(el('li', { class: 'ng', text: 'Handbook全文と各欄の内容が一致しません' }));
+    if (c.text === null) checks.append(el('li', { class: 'na', text: `旧形式（formatVersion ${rec.formatVersion}）のため、全文と各欄の照合は省きました` }));
     if (!c.structure) checks.append(el('li', { class: 'ng', text: `画像ファイルが壊れているか、書き換えられています（${c.structureDetail}）` }));
     checks.append(el('li', { class: 'na', text: c.certified ? 'OpenPNE認定：署名がありますが、このバージョンでは検証できません' : 'OpenPNE認定：未認定' }));
 

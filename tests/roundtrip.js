@@ -114,23 +114,30 @@ const OUT = path.join(ROOT, 'samples');
   check('Noto Sans JP のフォントが読み込まれている', misc.fontLoaded > 0, `${misc.fontLoaded} faces`);
   check('ページでエラーが出ていない', errors.length === 0, errors.join(' / '));
 
-  // 入れすぎると書き出しボタンが無効になる
-  await page.evaluate(() => {
+  // すべての欄を上限まで埋めても1枚に収まり、上限を超えると書き出しボタンが無効になる
+  const fill = (extra) => page.evaluate((extra) => {
     const { App, Handbook } = window.KakariResume;
     const long = (n) => 'あ'.repeat(n);
     const k = Handbook.emptyKakari();
-    k.name = '長文係';
-    for (const f of Handbook.FIELDS.slice(2)) k[f.key] = Handbook.isListKind(f.kind) ? Array(f.maxItems).fill(long(f.max)) : long(f.max);
-    App.setData({ kakari: k, credits: Handbook.emptyCredits(), icon: null });
-  });
-  await page.waitForTimeout(500);
-  const overflowUi = await page.evaluate(() => ({
+    k.name = 'あ'.repeat(20); k.version = 'v'.repeat(10);
+    for (const f of Handbook.FIELDS.slice(2)) k[f.key] = Array(f.maxItems).fill(long(f.max + extra));
+    const credits = { author: long(30), illustrator: long(30), textLicense: 'CC BY 4.0', imageLicense: 'CC BY 4.0' };
+    App.setData({ kakari: k, credits, icon: null });
+  }, extra);
+  const ui = () => page.evaluate(() => ({
     disabled: document.getElementById('btn-export').disabled,
     status: document.getElementById('make-status').textContent,
   }));
-  check('収まらないときは警告が出て書き出し無効', overflowUi.disabled && /収まりません/.test(overflowUi.status), overflowUi.status);
+  await fill(0);
+  await page.waitForTimeout(500);
+  const maxUi = await ui();
+  check('すべての欄を上限まで埋めても1枚に収まる', !maxUi.disabled && /収まっています/.test(maxUi.status), maxUi.status);
   await page.evaluate(() => { document.querySelector('.preview-pane').scrollIntoView(); });
-  await page.locator('#preview').screenshot({ path: path.join(ROOT, 'tests', 'screen-overflow.png') });
+  await page.locator('#preview').screenshot({ path: path.join(ROOT, 'tests', 'screen-max.png') });
+  await fill(5);
+  await page.waitForTimeout(500);
+  const overUi = await ui();
+  check('上限を超えると警告が出て書き出し無効', overUi.disabled && /注意があります/.test(overUi.status), overUi.status);
 
   // 読むモード（画面操作）
   await page.click('#tab-read');
